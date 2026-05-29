@@ -1,0 +1,952 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#7c5cfc">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="VoiceMemo">
+<meta name="description" content="Aplikasi catatan harian dengan input suara">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<title>VoiceMemo</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet">
+
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+:root {
+  --bg: #0a0a0f;
+  --surface: #111118;
+  --card: #18181f;
+  --border: #22222e;
+  --accent: #7c5cfc;
+  --accent2: #e040fb;
+  --text: #f0eeff;
+  --muted: #5e5b72;
+  --green: #39f5a0;
+  --red: #ff4e6a;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+html, body {
+  height: 100%;
+  overflow: hidden;
+  background: var(--bg);
+}
+
+body {
+  font-family: 'DM Mono', monospace;
+  color: var(--text);
+  display: flex;
+  flex-direction: column;
+  user-select: none;
+}
+
+/* ── SCREEN MANAGER ── */
+.screen {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.28s ease, transform 0.28s ease;
+  transform: translateX(24px);
+}
+.screen.active {
+  opacity: 1;
+  pointer-events: all;
+  transform: translateX(0);
+}
+.screen.exit {
+  opacity: 0;
+  transform: translateX(-24px);
+  pointer-events: none;
+}
+
+/* ── STATUS BAR SPACER ── */
+.status-bar {
+  height: calc(var(--safe-top) + 44px);
+  padding-top: var(--safe-top);
+  flex-shrink: 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding-bottom: 6px;
+}
+
+/* ── NAV BAR ── */
+.nav-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px;
+  height: 56px;
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.nav-title {
+  font-family: 'Syne', sans-serif;
+  font-weight: 800;
+  font-size: 22px;
+  letter-spacing: -0.5px;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.nav-btn {
+  width: 38px; height: 38px;
+  border-radius: 12px;
+  border: 1.5px solid var(--border);
+  background: var(--card);
+  color: var(--text);
+  font-size: 16px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.nav-btn:active { background: #28283a; }
+
+/* ── SCROLL AREA ── */
+.scroll-area {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.scroll-area::-webkit-scrollbar { display: none; }
+
+/* ── HOME SCREEN ── */
+
+/* Stats row */
+.stats-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 10px;
+  padding: 16px 16px 0;
+}
+.stat-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 14px 12px;
+  text-align: center;
+}
+.stat-num {
+  font-family: 'Syne', sans-serif;
+  font-weight: 800;
+  font-size: 26px;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+.stat-num.accent { color: var(--accent); }
+.stat-num.green { color: var(--green); }
+.stat-num.muted { color: var(--muted); }
+.stat-label { font-size: 9px; color: var(--muted); letter-spacing: 1.5px; text-transform: uppercase; }
+
+/* Filter chips */
+.chips-row {
+  display: flex;
+  gap: 8px;
+  padding: 14px 16px 10px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.chips-row::-webkit-scrollbar { display: none; }
+
+.chip {
+  padding: 6px 14px;
+  border-radius: 100px;
+  font-size: 11px;
+  font-family: 'DM Mono', monospace;
+  letter-spacing: 1px;
+  cursor: pointer;
+  border: 1.5px solid var(--border);
+  background: var(--card);
+  color: var(--muted);
+  white-space: nowrap;
+  transition: all 0.18s;
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+.chip.on { border-color: var(--accent); color: var(--accent); background: #7c5cfc18; }
+
+/* Memo list */
+.memo-list { padding: 4px 16px 120px; display: flex; flex-direction: column; gap: 10px; }
+
+.date-sep {
+  font-size: 10px;
+  color: var(--muted);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  padding: 10px 0 4px;
+  border-top: 1px solid var(--border);
+}
+.date-sep:first-child { border-top: none; padding-top: 0; }
+
+.memo-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 14px 14px 14px 16px;
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  position: relative;
+  overflow: hidden;
+  animation: fadeUp 0.25s ease;
+  transition: opacity 0.2s;
+}
+@keyframes fadeUp { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+
+.memo-card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 12px; bottom: 12px;
+  width: 3px;
+  border-radius: 3px;
+  background: linear-gradient(to bottom, var(--accent), var(--accent2));
+}
+.memo-card.done { opacity: 0.4; }
+.memo-card.done::before { background: var(--muted); }
+
+.check {
+  width: 24px; height: 24px;
+  border-radius: 50%;
+  border: 2px solid var(--muted);
+  background: transparent;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  margin-top: 1px;
+  font-size: 12px;
+  color: transparent;
+  transition: all 0.2s;
+}
+.memo-card.done .check { background: var(--green); border-color: var(--green); color: #000; }
+
+.memo-body { flex: 1; min-width: 0; }
+.memo-text {
+  font-size: 13.5px;
+  line-height: 1.65;
+  color: var(--text);
+  word-break: break-word;
+  margin-bottom: 6px;
+}
+.memo-card.done .memo-text { text-decoration: line-through; color: var(--muted); }
+.memo-footer { display: flex; align-items: center; gap: 8px; }
+.memo-cat {
+  font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase;
+  color: var(--accent2); opacity: 0.85;
+}
+.memo-time { font-size: 10px; color: var(--muted); }
+
+.del-btn {
+  width: 32px; height: 32px;
+  border-radius: 10px;
+  border: none;
+  background: none;
+  color: var(--muted);
+  font-size: 15px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.18s;
+}
+.del-btn:active { background: #ff4e6a22; color: var(--red); }
+
+/* Empty state */
+.empty-state {
+  text-align: center;
+  padding: 60px 24px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 2;
+  display: none;
+}
+.empty-state.show { display: block; }
+.empty-icon { font-size: 48px; display: block; margin-bottom: 12px; }
+
+/* ── FAB ── */
+.fab {
+  position: fixed;
+  bottom: calc(var(--safe-bottom) + 24px);
+  right: 24px;
+  width: 64px; height: 64px;
+  border-radius: 22px;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  border: none;
+  color: #fff;
+  font-size: 26px;
+  cursor: pointer;
+  box-shadow: 0 8px 32px #7c5cfc55;
+  display: flex; align-items: center; justify-content: center;
+  transition: transform 0.2s, box-shadow 0.2s;
+  z-index: 100;
+}
+.fab:active { transform: scale(0.93); box-shadow: 0 4px 16px #7c5cfc44; }
+
+/* ── RECORD SCREEN ── */
+#recordScreen {
+  background: var(--bg);
+  justify-content: space-between;
+  padding-bottom: calc(var(--safe-bottom) + 32px);
+}
+
+.rec-header {
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.back-btn {
+  width: 40px; height: 40px;
+  border-radius: 13px;
+  border: 1.5px solid var(--border);
+  background: var(--card);
+  color: var(--text);
+  font-size: 18px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+}
+.rec-title {
+  font-family: 'Syne', sans-serif;
+  font-weight: 700;
+  font-size: 18px;
+}
+
+.rec-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 28px;
+  padding: 0 24px;
+}
+
+/* Visualizer */
+.visualizer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  height: 60px;
+}
+.vis-bar {
+  width: 4px;
+  border-radius: 99px;
+  background: linear-gradient(to top, var(--accent), var(--accent2));
+  height: 8px;
+  transition: height 0.08s ease;
+  opacity: 0.5;
+}
+.visualizer.active .vis-bar { opacity: 1; }
+.visualizer.active .vis-bar:nth-child(1) { animation: vb 0.7s 0.0s infinite alternate; }
+.visualizer.active .vis-bar:nth-child(2) { animation: vb 0.6s 0.1s infinite alternate; }
+.visualizer.active .vis-bar:nth-child(3) { animation: vb 0.8s 0.05s infinite alternate; }
+.visualizer.active .vis-bar:nth-child(4) { animation: vb 0.5s 0.15s infinite alternate; }
+.visualizer.active .vis-bar:nth-child(5) { animation: vb 0.9s 0.0s infinite alternate; }
+.visualizer.active .vis-bar:nth-child(6) { animation: vb 0.6s 0.2s infinite alternate; }
+.visualizer.active .vis-bar:nth-child(7) { animation: vb 0.7s 0.1s infinite alternate; }
+.visualizer.active .vis-bar:nth-child(8) { animation: vb 0.55s 0.05s infinite alternate; }
+.visualizer.active .vis-bar:nth-child(9) { animation: vb 0.8s 0.12s infinite alternate; }
+.visualizer.active .vis-bar:nth-child(10) { animation: vb 0.65s 0.0s infinite alternate; }
+.visualizer.active .vis-bar:nth-child(11) { animation: vb 0.75s 0.18s infinite alternate; }
+.visualizer.active .vis-bar:nth-child(12) { animation: vb 0.9s 0.08s infinite alternate; }
+@keyframes vb { to { height: 48px; } }
+
+/* Mic ring area */
+.mic-area {
+  position: relative;
+  display: flex; align-items: center; justify-content: center;
+  width: 180px; height: 180px;
+}
+.ring {
+  position: absolute;
+  border-radius: 50%;
+  border: 1.5px solid var(--accent);
+  opacity: 0;
+  pointer-events: none;
+}
+.ring-1 { width: 110px; height: 110px; }
+.ring-2 { width: 145px; height: 145px; }
+.ring-3 { width: 180px; height: 180px; }
+.recording .ring { animation: pulse 1.6s ease-out infinite; }
+.recording .ring-2 { animation-delay: 0.35s; }
+.recording .ring-3 { animation-delay: 0.7s; }
+@keyframes pulse { 0%{opacity:0.7;transform:scale(0.85)} 100%{opacity:0;transform:scale(1.05)} }
+
+.mic-big {
+  width: 88px; height: 88px;
+  border-radius: 28px;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  border: none;
+  font-size: 36px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 8px 40px #7c5cfc55;
+  transition: transform 0.18s, box-shadow 0.18s;
+  position: relative; z-index: 2;
+}
+.mic-big:active { transform: scale(0.94); }
+.mic-big.recording {
+  background: linear-gradient(135deg, var(--red), #ff8c69);
+  box-shadow: 0 8px 40px #ff4e6a55;
+}
+
+.rec-status {
+  font-size: 13px;
+  color: var(--muted);
+  letter-spacing: 1px;
+  text-align: center;
+}
+.rec-status.live { color: var(--red); }
+.rec-status.live::before {
+  content: '● ';
+  animation: blink 1s infinite;
+}
+@keyframes blink { 50%{opacity:0} }
+
+/* Preview textarea area */
+.preview-area {
+  width: 100%;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 16px;
+  min-height: 80px;
+  max-height: 150px;
+  overflow-y: auto;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text);
+  word-break: break-word;
+  scrollbar-width: none;
+}
+.preview-area::-webkit-scrollbar { display: none; }
+.preview-area.placeholder { color: var(--muted); font-style: italic; }
+
+/* Category picker */
+.cat-picker {
+  display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; width: 100%;
+}
+.cat-pill {
+  padding: 6px 16px;
+  border-radius: 100px;
+  font-size: 11px;
+  font-family: 'DM Mono', monospace;
+  letter-spacing: 1px;
+  cursor: pointer;
+  border: 1.5px solid var(--border);
+  background: var(--card);
+  color: var(--muted);
+  text-transform: uppercase;
+  transition: all 0.18s;
+}
+.cat-pill.on { border-color: var(--accent); color: var(--accent); background: #7c5cfc18; }
+
+.rec-footer {
+  padding: 0 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.save-main {
+  width: 100%;
+  padding: 16px;
+  border-radius: 18px;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  border: none;
+  font-family: 'Syne', sans-serif;
+  font-weight: 700;
+  font-size: 16px;
+  color: #fff;
+  cursor: pointer;
+  letter-spacing: 0.3px;
+  transition: opacity 0.2s, transform 0.15s;
+  display: none;
+}
+.save-main.show { display: block; }
+.save-main:active { opacity: 0.88; transform: scale(0.98); }
+
+.discard-btn {
+  width: 100%;
+  padding: 12px;
+  border-radius: 18px;
+  background: none;
+  border: 1.5px solid var(--border);
+  font-family: 'DM Mono', monospace;
+  font-size: 13px;
+  color: var(--muted);
+  cursor: pointer;
+  transition: all 0.18s;
+  display: none;
+}
+.discard-btn.show { display: block; }
+.discard-btn:active { background: var(--card); color: var(--red); border-color: var(--red); }
+
+/* ── TOAST ── */
+.toast {
+  position: fixed;
+  bottom: calc(var(--safe-bottom) + 16px);
+  left: 50%;
+  transform: translateX(-50%) translateY(60px);
+  background: #28283a;
+  border: 1px solid var(--border);
+  padding: 11px 22px;
+  border-radius: 100px;
+  font-size: 13px;
+  color: var(--text);
+  transition: transform 0.3s ease, opacity 0.3s ease;
+  z-index: 999;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+}
+.toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+
+/* ── INSTALL BANNER ── */
+.install-banner {
+  margin: 12px 16px 0;
+  background: linear-gradient(135deg, #7c5cfc22, #e040fb18);
+  border: 1px solid #7c5cfc44;
+  border-radius: 16px;
+  padding: 12px 16px;
+  display: none;
+  align-items: center;
+  gap: 12px;
+}
+.install-banner.show { display: flex; }
+.install-text { flex: 1; font-size: 12px; color: var(--text); line-height: 1.5; }
+.install-text strong { color: var(--accent); font-family: 'Syne', sans-serif; }
+.install-cta {
+  padding: 8px 14px;
+  border-radius: 12px;
+  background: var(--accent);
+  border: none;
+  color: #fff;
+  font-size: 12px;
+  font-family: 'Syne', sans-serif;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.install-close {
+  background: none; border: none;
+  color: var(--muted); font-size: 18px;
+  cursor: pointer; flex-shrink: 0;
+  line-height: 1;
+}
+</style>
+</head>
+<body>
+
+<!-- ═══ HOME SCREEN ═══ -->
+<div class="screen active" id="homeScreen">
+  <div class="status-bar"></div>
+  <div class="nav-bar">
+    <div class="nav-title">VoiceMemo</div>
+    <div style="display:flex;gap:8px;">
+      <button class="nav-btn" id="clearDoneBtn" title="Hapus yang selesai">🗑️</button>
+      <button class="nav-btn" id="dateBtn">📅</button>
+    </div>
+  </div>
+
+  <div class="scroll-area">
+    <!-- Install banner -->
+    <div class="install-banner" id="installBanner">
+      <div class="install-text"><strong>Install Aplikasi</strong><br>Tambahkan ke layar utama HP kamu!</div>
+      <button class="install-cta" id="installBtn">Install</button>
+      <button class="install-close" id="closeBannerBtn">×</button>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats-row">
+      <div class="stat-card">
+        <div class="stat-num accent" id="statTotal">0</div>
+        <div class="stat-label">Total</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num green" id="statDone">0</div>
+        <div class="stat-label">Selesai</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num muted" id="statLeft">0</div>
+        <div class="stat-label">Tersisa</div>
+      </div>
+    </div>
+
+    <!-- Filter chips -->
+    <div class="chips-row">
+      <div class="chip on" data-filter="Semua">Semua</div>
+      <div class="chip" data-filter="Aktif">Aktif</div>
+      <div class="chip" data-filter="Selesai">Selesai</div>
+      <div class="chip" data-filter="Kerja">Kerja</div>
+      <div class="chip" data-filter="Pribadi">Pribadi</div>
+      <div class="chip" data-filter="Belanja">Belanja</div>
+      <div class="chip" data-filter="Lainnya">Lainnya</div>
+    </div>
+
+    <!-- Memo list -->
+    <div class="memo-list" id="memoList"></div>
+    <div class="empty-state" id="emptyState">
+      <span class="empty-icon">🎙️</span>
+      Belum ada catatan.<br>Tekan tombol <strong style="color:var(--accent)">+</strong> untuk mulai!
+    </div>
+  </div>
+
+  <button class="fab" id="fabBtn">🎙️</button>
+</div>
+
+<!-- ═══ RECORD SCREEN ═══ -->
+<div class="screen" id="recordScreen">
+  <div class="status-bar"></div>
+
+  <div class="rec-header">
+    <button class="back-btn" id="backBtn">←</button>
+    <div class="rec-title">Catatan Baru</div>
+  </div>
+
+  <div class="rec-body">
+    <div class="visualizer" id="visualizer">
+      <div class="vis-bar"></div><div class="vis-bar"></div><div class="vis-bar"></div>
+      <div class="vis-bar"></div><div class="vis-bar"></div><div class="vis-bar"></div>
+      <div class="vis-bar"></div><div class="vis-bar"></div><div class="vis-bar"></div>
+      <div class="vis-bar"></div><div class="vis-bar"></div><div class="vis-bar"></div>
+    </div>
+
+    <div class="mic-area" id="micArea">
+      <div class="ring ring-1"></div>
+      <div class="ring ring-2"></div>
+      <div class="ring ring-3"></div>
+      <button class="mic-big" id="micBigBtn">🎙️</button>
+    </div>
+
+    <div class="rec-status" id="recStatus">Tekan untuk merekam</div>
+
+    <div class="preview-area placeholder" id="previewArea">Hasil ucapan muncul di sini…</div>
+
+    <div class="cat-picker" id="catPicker">
+      <div class="cat-pill on" data-cat="Umum">Umum</div>
+      <div class="cat-pill" data-cat="Kerja">Kerja</div>
+      <div class="cat-pill" data-cat="Pribadi">Pribadi</div>
+      <div class="cat-pill" data-cat="Belanja">Belanja</div>
+      <div class="cat-pill" data-cat="Lainnya">Lainnya</div>
+    </div>
+  </div>
+
+  <div class="rec-footer">
+    <button class="save-main" id="saveMainBtn">＋ Simpan Catatan</button>
+    <button class="discard-btn" id="discardBtn">Hapus & Mulai Ulang</button>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ── STATE ──
+let memos = JSON.parse(localStorage.getItem('vm_memos') || '[]');
+let activeFilter = 'Semua';
+let selectedCat = 'Umum';
+let currentText = '';
+let recognition = null;
+let isListening = false;
+let deferredInstall = null;
+
+// ── UTILS ──
+function save() { localStorage.setItem('vm_memos', JSON.stringify(memos)); }
+function esc(t) { return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function showToast(msg, dur=2400) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), dur);
+}
+
+// ── SCREEN NAV ──
+function goTo(id) {
+  document.querySelectorAll('.screen').forEach(s => {
+    s.classList.remove('active');
+    if (s.id !== id) s.classList.add('exit');
+  });
+  const next = document.getElementById(id);
+  next.classList.remove('exit');
+  requestAnimationFrame(() => next.classList.add('active'));
+}
+
+document.getElementById('fabBtn').addEventListener('click', () => {
+  resetRecordScreen();
+  goTo('recordScreen');
+});
+document.getElementById('backBtn').addEventListener('click', () => {
+  if (isListening) stopRecording();
+  goTo('homeScreen');
+});
+
+// ── FILTER ──
+document.querySelectorAll('.chip').forEach(c => {
+  c.addEventListener('click', () => {
+    document.querySelectorAll('.chip').forEach(x => x.classList.remove('on'));
+    c.classList.add('on');
+    activeFilter = c.dataset.filter;
+    renderMemos();
+  });
+});
+
+// ── DATE BTN ──
+document.getElementById('dateBtn').addEventListener('click', () => {
+  const d = new Date().toLocaleDateString('id-ID', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+  showToast(d, 3000);
+});
+
+// ── CLEAR DONE ──
+document.getElementById('clearDoneBtn').addEventListener('click', () => {
+  const count = memos.filter(m => m.done).length;
+  if (!count) { showToast('Tidak ada catatan selesai'); return; }
+  memos = memos.filter(m => !m.done);
+  save(); renderMemos();
+  showToast(`${count} catatan dihapus`);
+});
+
+// ── RENDER ──
+function renderMemos() {
+  const list = document.getElementById('memoList');
+  const empty = document.getElementById('emptyState');
+
+  const filtered = memos.filter(m => {
+    if (activeFilter === 'Aktif') return !m.done;
+    if (activeFilter === 'Selesai') return m.done;
+    if (['Kerja','Pribadi','Belanja','Lainnya'].includes(activeFilter)) return m.cat === activeFilter;
+    return true;
+  });
+
+  const total = memos.length;
+  const done = memos.filter(m => m.done).length;
+  document.getElementById('statTotal').textContent = total;
+  document.getElementById('statDone').textContent = done;
+  document.getElementById('statLeft').textContent = total - done;
+
+  if (!filtered.length) {
+    list.innerHTML = '';
+    empty.classList.add('show');
+    return;
+  }
+  empty.classList.remove('show');
+
+  // Group by date
+  const groups = {};
+  filtered.forEach(m => {
+    const d = new Date(m.ts).toLocaleDateString('id-ID', { weekday:'long', day:'numeric', month:'short' });
+    if (!groups[d]) groups[d] = [];
+    groups[d].push(m);
+  });
+
+  list.innerHTML = '';
+  Object.entries(groups).forEach(([date, items]) => {
+    const sep = document.createElement('div');
+    sep.className = 'date-sep';
+    sep.textContent = date;
+    list.appendChild(sep);
+
+    items.forEach(m => {
+      const el = document.createElement('div');
+      el.className = 'memo-card' + (m.done ? ' done' : '');
+      const t = new Date(m.ts).toLocaleTimeString('id-ID', { hour:'2-digit', minute:'2-digit' });
+      el.innerHTML = `
+        <button class="check" data-id="${m.id}">✓</button>
+        <div class="memo-body">
+          <div class="memo-text">${esc(m.text)}</div>
+          <div class="memo-footer">
+            <span class="memo-cat">${m.cat}</span>
+            <span class="memo-time">${t}</span>
+          </div>
+        </div>
+        <button class="del-btn" data-id="${m.id}">✕</button>
+      `;
+      el.querySelector('.check').addEventListener('click', () => toggleDone(m.id));
+      el.querySelector('.del-btn').addEventListener('click', () => deleteMemo(m.id));
+      list.appendChild(el);
+    });
+  });
+}
+
+function toggleDone(id) {
+  const m = memos.find(x => x.id === id);
+  if (m) { m.done = !m.done; save(); renderMemos(); }
+}
+function deleteMemo(id) {
+  memos = memos.filter(x => x.id !== id);
+  save(); renderMemos();
+  showToast('Catatan dihapus');
+}
+
+// ── CATEGORY ──
+document.getElementById('catPicker').querySelectorAll('.cat-pill').forEach(p => {
+  p.addEventListener('click', () => {
+    document.querySelectorAll('.cat-pill').forEach(x => x.classList.remove('on'));
+    p.classList.add('on');
+    selectedCat = p.dataset.cat;
+  });
+});
+
+// ── SPEECH RECOGNITION ──
+function initRecognition() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) { showToast('Browser tidak mendukung rekam suara'); return null; }
+  const r = new SR();
+  r.lang = 'id-ID';
+  r.continuous = true;
+  r.interimResults = true;
+
+  r.onresult = e => {
+    let interim = '', final = '';
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      if (e.results[i].isFinal) final += e.results[i][0].transcript;
+      else interim += e.results[i][0].transcript;
+    }
+    currentText += final;
+    const display = (currentText + interim).trim();
+    const pa = document.getElementById('previewArea');
+    if (display) {
+      pa.textContent = display;
+      pa.classList.remove('placeholder');
+      document.getElementById('saveMainBtn').classList.add('show');
+      document.getElementById('discardBtn').classList.add('show');
+    }
+  };
+
+  r.onerror = e => {
+    if (e.error === 'no-speech') return;
+    showToast('Error: ' + e.error);
+    stopRecording();
+  };
+
+  r.onend = () => { if (isListening) r.start(); };
+  return r;
+}
+
+function startRecording() {
+  recognition = initRecognition();
+  if (!recognition) return;
+  currentText = '';
+  recognition.start();
+  isListening = true;
+
+  document.getElementById('micBigBtn').classList.add('recording');
+  document.getElementById('micBigBtn').textContent = '⏹️';
+  document.getElementById('micArea').classList.add('recording');
+  document.getElementById('visualizer').classList.add('active');
+  document.getElementById('recStatus').textContent = 'Sedang merekam...';
+  document.getElementById('recStatus').classList.add('live');
+}
+
+function stopRecording() {
+  isListening = false;
+  if (recognition) { recognition.stop(); recognition = null; }
+
+  document.getElementById('micBigBtn').classList.remove('recording');
+  document.getElementById('micBigBtn').textContent = '🎙️';
+  document.getElementById('micArea').classList.remove('recording');
+  document.getElementById('visualizer').classList.remove('active');
+  document.getElementById('recStatus').textContent = currentText ? 'Rekaman selesai — simpan atau rekam ulang' : 'Tekan untuk merekam';
+  document.getElementById('recStatus').classList.remove('live');
+}
+
+function resetRecordScreen() {
+  stopRecording();
+  currentText = '';
+  const pa = document.getElementById('previewArea');
+  pa.textContent = 'Hasil ucapan muncul di sini…';
+  pa.classList.add('placeholder');
+  document.getElementById('saveMainBtn').classList.remove('show');
+  document.getElementById('discardBtn').classList.remove('show');
+  document.getElementById('recStatus').textContent = 'Tekan untuk merekam';
+  document.getElementById('recStatus').classList.remove('live');
+  selectedCat = 'Umum';
+  document.querySelectorAll('.cat-pill').forEach(p => {
+    p.classList.toggle('on', p.dataset.cat === 'Umum');
+  });
+}
+
+document.getElementById('micBigBtn').addEventListener('click', () => {
+  if (isListening) stopRecording();
+  else startRecording();
+});
+
+document.getElementById('discardBtn').addEventListener('click', () => {
+  stopRecording();
+  currentText = '';
+  const pa = document.getElementById('previewArea');
+  pa.textContent = 'Hasil ucapan muncul di sini…';
+  pa.classList.add('placeholder');
+  document.getElementById('saveMainBtn').classList.remove('show');
+  document.getElementById('discardBtn').classList.remove('show');
+  document.getElementById('recStatus').textContent = 'Tekan untuk merekam';
+  document.getElementById('recStatus').classList.remove('live');
+});
+
+document.getElementById('saveMainBtn').addEventListener('click', () => {
+  const text = currentText.trim();
+  if (!text) { showToast('Tidak ada teks untuk disimpan'); return; }
+
+  memos.unshift({ id: Date.now(), text, cat: selectedCat, done: false, ts: new Date().toISOString() });
+  save();
+  renderMemos();
+  showToast('✔ Catatan tersimpan!');
+  goTo('homeScreen');
+  setTimeout(resetRecordScreen, 400);
+});
+
+// ── PWA INSTALL ──
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  deferredInstall = e;
+  if (!localStorage.getItem('vm_banner_closed')) {
+    document.getElementById('installBanner').classList.add('show');
+  }
+});
+
+document.getElementById('installBtn').addEventListener('click', async () => {
+  if (!deferredInstall) return;
+  deferredInstall.prompt();
+  const { outcome } = await deferredInstall.userChoice;
+  if (outcome === 'accepted') {
+    document.getElementById('installBanner').classList.remove('show');
+    showToast('Aplikasi berhasil diinstall! 🎉');
+  }
+  deferredInstall = null;
+});
+
+document.getElementById('closeBannerBtn').addEventListener('click', () => {
+  document.getElementById('installBanner').classList.remove('show');
+  localStorage.setItem('vm_banner_closed', '1');
+});
+
+window.addEventListener('appinstalled', () => {
+  document.getElementById('installBanner').classList.remove('show');
+  showToast('VoiceMemo sudah terinstall! 🎉');
+});
+
+// ── SERVICE WORKER ──
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('./sw.js').catch(() => {});
+}
+
+// ── INIT ──
+renderMemos();
+</script>
+</body>
+</html>
