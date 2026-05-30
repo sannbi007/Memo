@@ -13,214 +13,267 @@
 <title>VoiceMemo</title>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Mono:wght@300;400&family=Noto+Sans+JP:wght@300;400;700&display=swap" rel="stylesheet">
 <style>
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-:root {
-  --bg: #0a0a0f; --surface: #111118; --card: #18181f; --border: #22222e;
-  --accent: #7c5cfc; --accent2: #e040fb; --text: #f0eeff; --muted: #5e5b72;
-  --green: #39f5a0; --red: #ff4e6a; --jp: #fc5c7d;
-  --safe-top: env(safe-area-inset-top, 0px); --safe-bottom: env(safe-area-inset-bottom, 0px);
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg:#0a0a0f;--surface:#111118;--card:#18181f;--border:#22222e;
+  --accent:#7c5cfc;--accent2:#e040fb;--text:#f0eeff;--muted:#5e5b72;
+  --green:#39f5a0;--red:#ff4e6a;--jp:#fc5c7d;--gold:#f7971e;
+  --safe-top:env(safe-area-inset-top,0px);--safe-bottom:env(safe-area-inset-bottom,0px);
 }
-html, body { height: 100%; overflow: hidden; background: var(--bg); }
-body { font-family: 'DM Mono', monospace; color: var(--text); display: flex; flex-direction: column; user-select: none; }
+html,body{height:100%;overflow:hidden;background:var(--bg)}
+body{font-family:'DM Mono',monospace;color:var(--text);display:flex;flex-direction:column;user-select:none}
 
-.screen { position: absolute; inset: 0; display: flex; flex-direction: column; opacity: 0; pointer-events: none; transition: opacity 0.28s ease, transform 0.28s ease; transform: translateX(24px); }
-.screen.active { opacity: 1; pointer-events: all; transform: translateX(0); }
-.screen.exit { opacity: 0; transform: translateX(-24px); pointer-events: none; }
+/* SCREENS */
+.screen{position:absolute;inset:0;display:flex;flex-direction:column;opacity:0;pointer-events:none;transition:opacity .28s,transform .28s;transform:translateX(20px)}
+.screen.active{opacity:1;pointer-events:all;transform:translateX(0)}
+.screen.exit{opacity:0;transform:translateX(-20px);pointer-events:none}
+.status-bar{height:calc(var(--safe-top) + 40px);padding-top:var(--safe-top);flex-shrink:0}
+.nav-bar{display:flex;align-items:center;justify-content:space-between;padding:0 18px;height:52px;flex-shrink:0;border-bottom:1px solid var(--border);background:var(--surface)}
+.nav-title{font-family:'Syne',sans-serif;font-weight:800;font-size:20px;letter-spacing:-.5px;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.nav-btn{width:36px;height:36px;border-radius:11px;border:1.5px solid var(--border);background:var(--card);color:var(--text);font-size:15px;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.nav-btn:active{background:#28283a}
+.scroll-area{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.scroll-area::-webkit-scrollbar{display:none}
 
-.status-bar { height: calc(var(--safe-top) + 44px); padding-top: var(--safe-top); flex-shrink: 0; }
+/* STATS */
+.stats-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;padding:14px 14px 0}
+.stat-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:12px 8px;text-align:center}
+.stat-num{font-family:'Syne',sans-serif;font-weight:800;font-size:24px;line-height:1;margin-bottom:3px}
+.stat-num.accent{color:var(--accent)}.stat-num.green{color:var(--green)}.stat-num.muted{color:var(--muted)}
+.stat-label{font-size:9px;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase}
 
-.nav-bar { display: flex; align-items: center; justify-content: space-between; padding: 0 20px; height: 56px; flex-shrink: 0; border-bottom: 1px solid var(--border); background: var(--surface); }
-.nav-title { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 22px; letter-spacing: -0.5px; background: linear-gradient(135deg, var(--accent), var(--accent2)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
-.nav-btn { width: 38px; height: 38px; border-radius: 12px; border: 1.5px solid var(--border); background: var(--card); color: var(--text); font-size: 16px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
-.nav-btn:active { background: #28283a; }
+/* CHIPS */
+.chips-row{display:flex;gap:7px;padding:12px 14px 8px;overflow-x:auto;scrollbar-width:none}
+.chips-row::-webkit-scrollbar{display:none}
+.chip{padding:5px 13px;border-radius:100px;font-size:11px;font-family:'DM Mono',monospace;letter-spacing:.8px;cursor:pointer;border:1.5px solid var(--border);background:var(--card);color:var(--muted);white-space:nowrap;transition:all .18s;text-transform:uppercase;flex-shrink:0}
+.chip.on{border-color:var(--accent);color:var(--accent);background:#7c5cfc18}
 
-.scroll-area { flex: 1; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
-.scroll-area::-webkit-scrollbar { display: none; }
+/* MEMO LIST */
+.memo-list{padding:4px 14px 110px;display:flex;flex-direction:column;gap:10px}
+.date-sep{font-size:9px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;padding:10px 0 3px;border-top:1px solid var(--border)}
+.date-sep:first-child{border-top:none;padding-top:0}
 
-.stats-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; padding: 16px 16px 0; }
-.stat-card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 14px 12px; text-align: center; }
-.stat-num { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 26px; line-height: 1; margin-bottom: 4px; }
-.stat-num.accent { color: var(--accent); } .stat-num.green { color: var(--green); } .stat-num.muted { color: var(--muted); }
-.stat-label { font-size: 9px; color: var(--muted); letter-spacing: 1.5px; text-transform: uppercase; }
+.memo-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:12px 12px 10px 14px;position:relative;overflow:hidden;animation:fadeUp .22s ease}
+@keyframes fadeUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.memo-card::before{content:'';position:absolute;left:0;top:10px;bottom:10px;width:3px;border-radius:3px;background:linear-gradient(to bottom,var(--accent),var(--accent2))}
+.memo-card.all-done{opacity:.38}
+.memo-card.jp-card::before{background:linear-gradient(to bottom,var(--jp),var(--gold))}
+.memo-card.list-card::before{background:linear-gradient(to bottom,var(--green),#06b6d4)}
 
-.chips-row { display: flex; gap: 8px; padding: 14px 16px 10px; overflow-x: auto; scrollbar-width: none; }
-.chips-row::-webkit-scrollbar { display: none; }
-.chip { padding: 6px 14px; border-radius: 100px; font-size: 11px; font-family: 'DM Mono', monospace; letter-spacing: 1px; cursor: pointer; border: 1.5px solid var(--border); background: var(--card); color: var(--muted); white-space: nowrap; transition: all 0.18s; text-transform: uppercase; flex-shrink: 0; }
-.chip.on { border-color: var(--accent); color: var(--accent); background: #7c5cfc18; }
+.memo-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:6px}
+.memo-title{font-size:12.5px;color:var(--muted);line-height:1.4;flex:1;word-break:break-word}
+.del-btn{width:26px;height:26px;border-radius:8px;border:none;background:none;color:var(--muted);font-size:13px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}
+.del-btn:active{background:#ff4e6a22;color:var(--red)}
 
-.memo-list { padding: 4px 16px 120px; display: flex; flex-direction: column; gap: 10px; }
-.date-sep { font-size: 10px; color: var(--muted); letter-spacing: 2px; text-transform: uppercase; padding: 10px 0 4px; border-top: 1px solid var(--border); }
-.date-sep:first-child { border-top: none; padding-top: 0; }
+/* CHECKLIST */
+.checklist{display:flex;flex-direction:column;gap:5px;margin-bottom:6px}
+.check-item{display:flex;align-items:flex-start;gap:9px;padding:7px 8px;border-radius:10px;background:#ffffff05;cursor:pointer;transition:background .15s}
+.check-item:active{background:#ffffff0d}
+.check-item.checked{opacity:.42}
+.item-box{width:19px;height:19px;border-radius:5px;border:1.5px solid var(--muted);background:transparent;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:10px;color:transparent;transition:all .18s;margin-top:1px}
+.check-item.checked .item-box{background:var(--green);border-color:var(--green);color:#000}
+.item-text{font-size:13px;line-height:1.55;color:var(--text);flex:1;word-break:break-word}
+.check-item.checked .item-text{text-decoration:line-through;color:var(--muted)}
 
-.memo-card { background: var(--card); border: 1px solid var(--border); border-radius: 18px; padding: 14px 14px 14px 16px; display: flex; gap: 12px; align-items: flex-start; position: relative; overflow: hidden; animation: fadeUp 0.25s ease; }
-@keyframes fadeUp { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
-.memo-card::before { content: ''; position: absolute; left: 0; top: 12px; bottom: 12px; width: 3px; border-radius: 3px; background: linear-gradient(to bottom, var(--accent), var(--accent2)); }
-.memo-card.done { opacity: 0.4; }
-.memo-card.done::before { background: var(--muted); }
-.memo-card.jp-card::before { background: linear-gradient(to bottom, var(--jp), #f7971e); }
+/* Single memo check */
+.single-row{display:flex;align-items:flex-start;gap:9px}
+.single-box{width:19px;height:19px;border-radius:5px;border:1.5px solid var(--muted);background:transparent;display:flex;align-items:center;justify-content:center;flex-shrink:0;cursor:pointer;font-size:10px;color:transparent;transition:all .18s;margin-top:1px}
+.single-box.checked{background:var(--green);border-color:var(--green);color:#000}
+.single-text{font-size:13px;line-height:1.6;color:var(--text);flex:1;word-break:break-word}
+.single-text.done{text-decoration:line-through;color:var(--muted)}
 
-.check { width: 24px; height: 24px; border-radius: 50%; border: 2px solid var(--muted); background: transparent; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 2px; font-size: 12px; color: transparent; transition: all 0.2s; }
-.memo-card.done .check { background: var(--green); border-color: var(--green); color: #000; }
-.memo-body { flex: 1; min-width: 0; }
-.memo-footer { display: flex; align-items: center; gap: 8px; margin-top: 6px; flex-wrap: wrap; }
-.memo-cat { font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--accent2); opacity: 0.85; }
-.memo-time { font-size: 10px; color: var(--muted); }
-.del-btn { width: 32px; height: 32px; border-radius: 10px; border: none; background: none; color: var(--muted); font-size: 15px; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; }
-.del-btn:active { background: #ff4e6a22; color: var(--red); }
+/* PROGRESS */
+.prog-bar{height:3px;background:var(--border);border-radius:99px;margin:6px 0 4px;overflow:hidden}
+.prog-fill{height:100%;border-radius:99px;background:linear-gradient(to right,var(--accent),var(--green));transition:width .3s}
 
-/* Japanese display styles */
-.jp-block { display: flex; flex-direction: column; gap: 4px; width: 100%; }
-.jp-kanji { font-family: 'Noto Sans JP', sans-serif; font-size: 16px; font-weight: 700; color: var(--text); line-height: 1.6; word-break: break-word; }
-.jp-hiragana { font-family: 'Noto Sans JP', sans-serif; font-size: 13px; color: #a78bfa; line-height: 1.5; word-break: break-word; }
-.jp-katakana { font-family: 'Noto Sans JP', sans-serif; font-size: 13px; color: #f472b6; line-height: 1.5; word-break: break-word; }
-.jp-romaji { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--muted); letter-spacing: 0.5px; line-height: 1.5; word-break: break-word; }
-.jp-label { font-size: 9px; letter-spacing: 2px; color: var(--muted); text-transform: uppercase; margin-right: 4px; opacity: 0.6; }
-.memo-card.done .jp-kanji, .memo-card.done .jp-hiragana, .memo-card.done .jp-katakana, .memo-card.done .jp-romaji { text-decoration: line-through; opacity: 0.5; }
+/* JP inside card */
+.jp-section{margin-top:6px;border-top:1px solid var(--border);padding-top:6px;display:flex;flex-direction:column;gap:3px}
+.jp-row-m{display:flex;gap:8px;align-items:flex-start;padding:2px 0}
+.jp-lbl{font-size:9px;color:var(--muted);letter-spacing:.8px;text-transform:uppercase;width:54px;flex-shrink:0;padding-top:3px}
+.jp-val{font-family:'Noto Sans JP',sans-serif;font-size:13px;color:var(--text);line-height:1.6;flex:1;word-break:break-all}
+.jp-val.rom{font-family:'DM Mono',monospace;font-size:11px;color:var(--muted)}
+.jp-val.tl{font-size:12px;color:var(--green);font-family:'DM Mono',monospace}
 
-/* Normal text */
-.memo-text { font-size: 13.5px; line-height: 1.65; color: var(--text); word-break: break-word; }
-.memo-card.done .memo-text { text-decoration: line-through; color: var(--muted); }
+.memo-footer{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-top:4px}
+.memo-cat{font-size:9px;letter-spacing:1.2px;text-transform:uppercase;color:var(--accent2);opacity:.8}
+.memo-time{font-size:9px;color:var(--muted)}
+.memo-prog{font-size:9px;color:var(--green)}
 
-.empty-state { text-align: center; padding: 60px 24px; color: var(--muted); font-size: 13px; line-height: 2; display: none; }
-.empty-state.show { display: block; }
-.empty-icon { font-size: 48px; display: block; margin-bottom: 12px; }
-
-.fab { position: fixed; bottom: calc(var(--safe-bottom) + 24px); right: 24px; width: 64px; height: 64px; border-radius: 22px; background: linear-gradient(135deg, var(--accent), var(--accent2)); border: none; color: #fff; font-size: 26px; cursor: pointer; box-shadow: 0 8px 32px #7c5cfc55; display: flex; align-items: center; justify-content: center; z-index: 100; transition: transform 0.2s; }
-.fab:active { transform: scale(0.93); }
+.empty-state{text-align:center;padding:56px 24px;color:var(--muted);font-size:13px;line-height:2;display:none}
+.empty-state.show{display:block}
+.empty-icon{font-size:44px;display:block;margin-bottom:10px}
+.fab{position:fixed;bottom:calc(var(--safe-bottom) + 22px);right:22px;width:62px;height:62px;border-radius:21px;background:linear-gradient(135deg,var(--accent),var(--accent2));border:none;color:#fff;font-size:24px;cursor:pointer;box-shadow:0 8px 28px #7c5cfc55;display:flex;align-items:center;justify-content:center;z-index:100;transition:transform .18s}
+.fab:active{transform:scale(.93)}
 
 /* ── RECORD SCREEN ── */
-#recordScreen { background: var(--bg); justify-content: space-between; padding-bottom: calc(var(--safe-bottom) + 16px); }
-.rec-header { padding: 12px 20px; display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
-.back-btn { width: 40px; height: 40px; border-radius: 13px; border: 1.5px solid var(--border); background: var(--card); color: var(--text); font-size: 18px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
-.rec-title { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 18px; }
+#recordScreen{background:var(--bg);padding-bottom:calc(var(--safe-bottom) + 10px)}
+.rec-header{padding:10px 18px;display:flex;align-items:center;gap:10px;flex-shrink:0}
+.back-btn{width:38px;height:38px;border-radius:12px;border:1.5px solid var(--border);background:var(--card);color:var(--text);font-size:17px;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.rec-title{font-family:'Syne',sans-serif;font-weight:700;font-size:17px}
 
-.rec-body { flex: 1; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; scrollbar-width: none; display: flex; flex-direction: column; align-items: center; gap: 16px; padding: 8px 20px 20px; }
-.rec-body::-webkit-scrollbar { display: none; }
+.rec-body{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;display:flex;flex-direction:column;align-items:center;gap:12px;padding:4px 18px 14px}
+.rec-body::-webkit-scrollbar{display:none}
 
-/* Language row */
-.lang-section { width: 100%; }
-.section-label { font-size: 10px; color: var(--muted); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 8px; }
-.lang-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-.lang-btn { padding: 10px 8px; border-radius: 14px; font-size: 12px; font-family: 'DM Mono', monospace; cursor: pointer; border: 1.5px solid var(--border); background: var(--card); color: var(--muted); transition: all 0.18s; text-align: center; line-height: 1.4; }
-.lang-btn.on { border-color: var(--accent); color: var(--text); background: #7c5cfc18; }
-.lang-btn.jp-btn.on { border-color: var(--jp); background: #fc5c7d18; }
-.lang-name { font-size: 13px; display: block; }
-.lang-sub { font-size: 10px; color: var(--muted); display: block; margin-top: 2px; }
-.lang-btn.on .lang-sub { color: var(--accent); }
-.lang-btn.jp-btn.on .lang-sub { color: var(--jp); }
+/* INPUT MODE TOGGLE */
+.mode-toggle{display:flex;gap:0;width:100%;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:4px;overflow:hidden}
+.mode-btn{flex:1;padding:9px 8px;border-radius:10px;border:none;background:transparent;color:var(--muted);font-size:12px;font-family:'DM Mono',monospace;cursor:pointer;transition:all .18s;letter-spacing:.5px;display:flex;align-items:center;justify-content:center;gap:6px}
+.mode-btn.on{background:var(--accent);color:#fff;box-shadow:0 2px 10px #7c5cfc44}
+.mode-btn span{font-size:14px}
 
-/* Japanese script selector */
-.jp-script-section { width: 100%; background: #fc5c7d0d; border: 1px solid #fc5c7d33; border-radius: 16px; padding: 14px; display: none; }
-.jp-script-section.show { display: block; }
-.jp-script-label { font-size: 10px; color: var(--jp); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 10px; }
-.jp-script-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-.jp-script-btn { padding: 10px 8px; border-radius: 12px; font-size: 12px; cursor: pointer; border: 1.5px solid #fc5c7d33; background: var(--card); color: var(--muted); transition: all 0.18s; text-align: center; }
-.jp-script-btn.on { border-color: var(--jp); color: var(--text); background: #fc5c7d18; }
-.jp-script-name { font-family: 'Noto Sans JP', sans-serif; font-size: 16px; display: block; margin-bottom: 2px; }
-.jp-script-sub { font-size: 10px; display: block; color: var(--muted); }
-.jp-all-btn { margin-top: 8px; width: 100%; padding: 10px; border-radius: 12px; font-size: 12px; cursor: pointer; border: 1.5px solid #fc5c7d66; background: #fc5c7d18; color: var(--jp); font-family: 'DM Mono', monospace; transition: all 0.18s; letter-spacing: 1px; text-transform: uppercase; }
-.jp-all-btn.on { background: var(--jp); color: #fff; border-color: var(--jp); }
+/* LANG */
+.section-lbl{font-size:9px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-bottom:6px;width:100%}
+.lang-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px;width:100%}
+.lang-btn{padding:9px 6px;border-radius:13px;font-size:11px;font-family:'DM Mono',monospace;cursor:pointer;border:1.5px solid var(--border);background:var(--card);color:var(--muted);transition:all .18s;text-align:center;line-height:1.4}
+.lang-btn.on{border-color:var(--accent);color:var(--text);background:#7c5cfc18}
+.lang-btn.jp-btn.on{border-color:var(--jp);background:#fc5c7d18}
+.lang-name{font-size:12px;display:block}
+.lang-sub{font-size:9px;color:var(--muted);display:block;margin-top:1px}
+.lang-btn.on .lang-sub{color:var(--accent)}
+.lang-btn.jp-btn.on .lang-sub{color:var(--jp)}
 
-/* Visualizer */
-.visualizer { display: flex; align-items: center; justify-content: center; gap: 5px; height: 50px; }
-.vis-bar { width: 4px; border-radius: 99px; background: linear-gradient(to top, var(--accent), var(--accent2)); height: 8px; opacity: 0.4; }
-.visualizer.active .vis-bar { opacity: 1; }
-.visualizer.jp-mode .vis-bar { background: linear-gradient(to top, var(--jp), #f7971e); }
-.visualizer.active .vis-bar:nth-child(odd)  { animation: vb1 0.65s infinite alternate; }
-.visualizer.active .vis-bar:nth-child(even) { animation: vb2 0.5s  infinite alternate; }
-@keyframes vb1 { to { height: 44px; } } @keyframes vb2 { to { height: 28px; } }
+/* JP SCRIPTS */
+.jp-script-section{width:100%;background:#fc5c7d0d;border:1px solid #fc5c7d33;border-radius:14px;padding:12px;display:none}
+.jp-script-section.show{display:block}
+.jp-script-lbl{font-size:9px;color:var(--jp);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px}
+.jp-script-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.jp-script-btn{padding:9px 6px;border-radius:11px;font-size:11px;cursor:pointer;border:1.5px solid #fc5c7d33;background:var(--card);color:var(--muted);transition:all .18s;text-align:center}
+.jp-script-btn.on{border-color:var(--jp);color:var(--text);background:#fc5c7d18}
+.jp-sname{font-family:'Noto Sans JP',sans-serif;font-size:15px;display:block;margin-bottom:1px}
+.jp-ssub{font-size:9px;display:block;color:var(--muted)}
+.jp-all-btn{margin-top:7px;width:100%;padding:9px;border-radius:10px;font-size:11px;cursor:pointer;border:1.5px solid #fc5c7d66;background:#fc5c7d18;color:var(--jp);font-family:'DM Mono',monospace;transition:all .18s;letter-spacing:.8px;text-transform:uppercase}
+.jp-all-btn.on{background:var(--jp);color:#fff;border-color:var(--jp)}
 
-.mic-area { position: relative; display: flex; align-items: center; justify-content: center; width: 140px; height: 140px; }
-.ring { position: absolute; border-radius: 50%; border: 1.5px solid var(--accent); opacity: 0; pointer-events: none; }
-.ring-1 { width: 96px; height: 96px; } .ring-2 { width: 120px; height: 120px; } .ring-3 { width: 140px; height: 140px; }
-.recording .ring { animation: pulse 1.6s ease-out infinite; }
-.recording .ring-2 { animation-delay: 0.35s; } .recording .ring-3 { animation-delay: 0.7s; }
-.jp-rings .ring { border-color: var(--jp); }
-@keyframes pulse { 0%{opacity:0.7;transform:scale(0.85)} 100%{opacity:0;transform:scale(1.05)} }
-.mic-big { width: 76px; height: 76px; border-radius: 24px; background: linear-gradient(135deg, var(--accent), var(--accent2)); border: none; font-size: 30px; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 8px 40px #7c5cfc55; transition: transform 0.18s; position: relative; z-index: 2; }
-.mic-big.jp-mode { background: linear-gradient(135deg, var(--jp), #f7971e); box-shadow: 0 8px 40px #fc5c7d55; }
-.mic-big:active { transform: scale(0.94); }
-.mic-big.recording { background: linear-gradient(135deg, var(--red), #ff8c69); box-shadow: 0 8px 40px #ff4e6a55; }
+/* VISUALIZER */
+.visualizer{display:flex;align-items:center;justify-content:center;gap:4px;height:44px}
+.vis-bar{width:3px;border-radius:99px;background:linear-gradient(to top,var(--accent),var(--accent2));height:7px;opacity:.35}
+.visualizer.active .vis-bar{opacity:1}
+.visualizer.jp-mode .vis-bar{background:linear-gradient(to top,var(--jp),var(--gold))}
+.visualizer.active .vis-bar:nth-child(odd){animation:vb1 .65s infinite alternate}
+.visualizer.active .vis-bar:nth-child(even){animation:vb2 .5s infinite alternate}
+@keyframes vb1{to{height:38px}}@keyframes vb2{to{height:24px}}
 
-.rec-status { font-size: 12px; color: var(--muted); letter-spacing: 1px; text-align: center; }
-.rec-status.live { color: var(--red); }
-.rec-status.live::before { content: '● '; animation: blink 1s infinite; }
-@keyframes blink { 50%{opacity:0} }
+.mic-area{position:relative;display:flex;align-items:center;justify-content:center;width:120px;height:120px}
+.ring{position:absolute;border-radius:50%;border:1.5px solid var(--accent);opacity:0;pointer-events:none}
+.ring-1{width:84px;height:84px}.ring-2{width:104px;height:104px}.ring-3{width:120px;height:120px}
+.recording .ring{animation:pulse 1.6s ease-out infinite}
+.recording .ring-2{animation-delay:.35s}.recording .ring-3{animation-delay:.7s}
+.jp-rings .ring{border-color:var(--jp)}
+@keyframes pulse{0%{opacity:.7;transform:scale(.85)}100%{opacity:0;transform:scale(1.05)}}
+.mic-big{width:68px;height:68px;border-radius:21px;background:linear-gradient(135deg,var(--accent),var(--accent2));border:none;font-size:26px;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 6px 32px #7c5cfc55;transition:transform .18s;position:relative;z-index:2}
+.mic-big.jp-mode{background:linear-gradient(135deg,var(--jp),var(--gold));box-shadow:0 6px 32px #fc5c7d55}
+.mic-big:active{transform:scale(.93)}
+.mic-big.recording{background:linear-gradient(135deg,var(--red),#ff8c69);box-shadow:0 6px 32px #ff4e6a55}
 
-/* Confidence */
-.conf-bar-wrap { width: 100%; background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 10px 14px; display: none; }
-.conf-bar-wrap.show { display: block; }
-.conf-label { font-size: 10px; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 6px; display: flex; justify-content: space-between; }
-.conf-label span { color: var(--green); }
-.conf-track { height: 4px; background: var(--border); border-radius: 99px; overflow: hidden; }
-.conf-fill { height: 100%; border-radius: 99px; background: linear-gradient(to right, var(--accent), var(--green)); transition: width 0.3s ease; width: 0%; }
+.rec-status{font-size:11px;color:var(--muted);letter-spacing:.8px;text-align:center}
+.rec-status.live{color:var(--red)}
+.rec-status.live::before{content:'● ';animation:blink 1s infinite}
+@keyframes blink{50%{opacity:0}}
 
-/* Edit box */
-.edit-wrap { width: 100%; }
-.edit-label { font-size: 10px; color: var(--muted); letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center; }
-.edit-clear { font-size: 11px; color: var(--red); cursor: pointer; letter-spacing: 0; text-transform: none; }
-.edit-box { width: 100%; background: var(--card); border: 1.5px solid var(--border); border-radius: 16px; padding: 14px; font-size: 14px; font-family: 'Noto Sans JP', 'DM Mono', monospace; line-height: 1.7; color: var(--text); min-height: 80px; max-height: 130px; overflow-y: auto; resize: none; outline: none; transition: border-color 0.2s; }
-.edit-box:focus { border-color: var(--accent); }
-.edit-box.jp-input:focus { border-color: var(--jp); }
-.edit-box::placeholder { color: var(--muted); font-style: italic; font-family: 'DM Mono', monospace; font-size: 12px; }
+/* CONFIDENCE */
+.conf-wrap{width:100%;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:9px 12px;display:none}
+.conf-wrap.show{display:block}
+.conf-lbl{font-size:9px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:5px;display:flex;justify-content:space-between}
+.conf-lbl span{color:var(--green)}
+.conf-track{height:4px;background:var(--border);border-radius:99px;overflow:hidden}
+.conf-fill{height:100%;border-radius:99px;background:linear-gradient(to right,var(--accent),var(--green));transition:width .3s;width:0%}
 
-/* JP preview card */
-.jp-preview { width: 100%; background: var(--card); border: 1px solid #fc5c7d33; border-radius: 16px; padding: 14px 16px; display: none; flex-direction: column; gap: 8px; }
-.jp-preview.show { display: flex; }
-.jp-preview-title { font-size: 10px; color: var(--jp); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 2px; }
-.jp-row { display: flex; align-items: flex-start; gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--border); }
-.jp-row:last-child { border-bottom: none; padding-bottom: 0; }
-.jp-row-label { font-size: 9px; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; width: 64px; flex-shrink: 0; padding-top: 2px; }
-.jp-row-val { font-family: 'Noto Sans JP', sans-serif; font-size: 14px; color: var(--text); line-height: 1.6; flex: 1; word-break: break-all; }
-.jp-row-val.romaji { font-family: 'DM Mono', monospace; font-size: 12px; color: var(--muted); }
-.jp-loading { font-size: 12px; color: var(--muted); text-align: center; padding: 8px 0; }
+/* DETECTED ITEMS */
+.det-section{width:100%;background:var(--card);border:1.5px solid var(--accent);border-radius:14px;padding:12px;display:none;flex-direction:column;gap:9px}
+.det-section.show{display:flex}
+.det-title{font-size:9px;color:var(--accent);letter-spacing:1.8px;text-transform:uppercase}
+.det-hint{font-size:11px;color:var(--muted);line-height:1.5}
+.det-list{display:flex;flex-direction:column;gap:5px}
+.det-item{display:flex;align-items:center;gap:9px;padding:7px 9px;border-radius:9px;background:#7c5cfc10;cursor:pointer;transition:background .15s}
+.det-item.off{background:#ffffff06;opacity:.45}
+.det-item:active{background:#7c5cfc22}
+.det-chk{width:20px;height:20px;border-radius:6px;border:1.5px solid var(--accent);background:#7c5cfc18;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:11px;color:var(--accent);transition:all .18s}
+.det-item.off .det-chk{border-color:var(--muted);background:transparent;color:transparent}
+.det-text{font-size:13px;color:var(--text);flex:1;line-height:1.5}
+.det-item.off .det-text{text-decoration:line-through;color:var(--muted)}
+.det-del{font-size:13px;color:var(--muted);background:none;border:none;cursor:pointer;padding:2px 5px;flex-shrink:0}
+.det-del:active{color:var(--red)}
+.add-row{display:flex;gap:7px}
+.add-inp{flex:1;background:#ffffff08;border:1.5px solid var(--border);border-radius:9px;padding:7px 11px;font-size:13px;font-family:'DM Mono',monospace;color:var(--text);outline:none;transition:border-color .2s}
+.add-inp:focus{border-color:var(--accent)}
+.add-inp::placeholder{color:var(--muted)}
+.add-btn{padding:7px 13px;border-radius:9px;background:var(--accent);border:none;color:#fff;font-size:12px;font-family:'DM Mono',monospace;cursor:pointer;white-space:nowrap}
 
-/* Category */
-.cat-picker { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; width: 100%; }
-.cat-pill { padding: 6px 16px; border-radius: 100px; font-size: 11px; font-family: 'DM Mono', monospace; letter-spacing: 1px; cursor: pointer; border: 1.5px solid var(--border); background: var(--card); color: var(--muted); text-transform: uppercase; transition: all 0.18s; }
-.cat-pill.on { border-color: var(--accent); color: var(--accent); background: #7c5cfc18; }
+/* EDIT / TYPE BOX */
+.edit-wrap{width:100%}
+.edit-lbl{font-size:9px;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:5px;display:flex;justify-content:space-between;align-items:center}
+.edit-clear{font-size:11px;color:var(--red);cursor:pointer;letter-spacing:0;text-transform:none}
+.edit-box{width:100%;background:var(--card);border:1.5px solid var(--border);border-radius:14px;padding:12px;font-size:14px;font-family:'DM Mono',monospace;line-height:1.7;color:var(--text);min-height:68px;max-height:120px;overflow-y:auto;resize:none;outline:none;transition:border-color .2s}
+.edit-box:focus{border-color:var(--accent)}
+.edit-box.jp-input:focus{border-color:var(--jp)}
+.edit-box::placeholder{color:var(--muted);font-style:italic;font-size:12px}
 
-/* Tips */
-.tips-panel { width: 100%; background: #7c5cfc0a; border: 1px solid #7c5cfc22; border-radius: 14px; padding: 12px 14px; }
-.tips-title { font-size: 10px; color: var(--accent); letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 8px; }
-.tip-item { font-size: 11px; color: var(--muted); line-height: 1.5; display: flex; gap: 8px; margin-bottom: 4px; }
-.tip-item::before { content: '›'; color: var(--accent); flex-shrink: 0; }
+/* TYPE MODE - bigger textarea */
+.type-box{width:100%;background:var(--card);border:1.5px solid var(--border);border-radius:14px;padding:14px;font-size:14px;font-family:'DM Mono',monospace;line-height:1.75;color:var(--text);min-height:130px;max-height:200px;overflow-y:auto;resize:none;outline:none;transition:border-color .2s}
+.type-box:focus{border-color:var(--accent)}
+.type-box::placeholder{color:var(--muted);font-style:italic;font-size:12px}
+.type-box.jp-input:focus{border-color:var(--jp)}
+.type-hint{font-size:11px;color:var(--muted);line-height:1.6;width:100%;padding:4px 2px}
+.type-hint strong{color:var(--accent)}
 
-/* Footer */
-.rec-footer { padding: 12px 20px 0; display: flex; flex-direction: column; gap: 8px; flex-shrink: 0; }
-.save-main { width: 100%; padding: 16px; border-radius: 18px; background: linear-gradient(135deg, var(--accent), var(--accent2)); border: none; font-family: 'Syne', sans-serif; font-weight: 700; font-size: 16px; color: #fff; cursor: pointer; transition: opacity 0.2s, transform 0.15s; display: none; }
-.save-main.show { display: block; }
-.save-main:active { opacity: 0.88; transform: scale(0.98); }
-.discard-btn { width: 100%; padding: 12px; border-radius: 18px; background: none; border: 1.5px solid var(--border); font-family: 'DM Mono', monospace; font-size: 13px; color: var(--muted); cursor: pointer; transition: all 0.18s; display: none; }
-.discard-btn.show { display: block; }
-.discard-btn:active { background: var(--card); color: var(--red); border-color: var(--red); }
+/* JP PREVIEW */
+.jp-preview{width:100%;background:var(--card);border:1px solid #fc5c7d33;border-radius:14px;padding:12px 14px;display:none;flex-direction:column;gap:5px}
+.jp-preview.show{display:flex}
+.jp-prev-title{font-size:9px;color:var(--jp);letter-spacing:1.8px;text-transform:uppercase;margin-bottom:2px}
+.jp-pr{display:flex;align-items:flex-start;gap:7px;padding:5px 0;border-bottom:1px solid var(--border)}
+.jp-pr:last-child{border-bottom:none;padding-bottom:0}
+.jp-pr-lbl{font-size:9px;color:var(--muted);letter-spacing:.8px;text-transform:uppercase;width:56px;flex-shrink:0;padding-top:3px}
+.jp-pr-val{font-family:'Noto Sans JP',sans-serif;font-size:13px;color:var(--text);flex:1;line-height:1.6;word-break:break-all}
+.jp-pr-val.rom{font-family:'DM Mono',monospace;font-size:11px;color:var(--muted)}
+.jp-pr-val.tl{font-size:12px;color:var(--green);font-family:'DM Mono',monospace}
 
-.toast { position: fixed; bottom: calc(var(--safe-bottom) + 16px); left: 50%; transform: translateX(-50%) translateY(60px); background: #28283a; border: 1px solid var(--border); padding: 11px 22px; border-radius: 100px; font-size: 13px; color: var(--text); transition: transform 0.3s ease, opacity 0.3s ease; z-index: 999; white-space: nowrap; opacity: 0; pointer-events: none; }
-.toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+/* TIPS */
+.tips-panel{width:100%;background:#7c5cfc08;border:1px solid #7c5cfc20;border-radius:12px;padding:10px 12px}
+.tips-title{font-size:9px;color:var(--accent);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:6px}
+.tip-item{font-size:11px;color:var(--muted);line-height:1.5;display:flex;gap:7px;margin-bottom:3px}
+.tip-item::before{content:'›';color:var(--accent);flex-shrink:0}
 
-.install-banner { margin: 12px 16px 0; background: linear-gradient(135deg, #7c5cfc22, #e040fb18); border: 1px solid #7c5cfc44; border-radius: 16px; padding: 12px 16px; display: none; align-items: center; gap: 12px; }
-.install-banner.show { display: flex; }
-.install-text { flex: 1; font-size: 12px; color: var(--text); line-height: 1.5; }
-.install-text strong { color: var(--accent); font-family: 'Syne', sans-serif; }
-.install-cta { padding: 8px 14px; border-radius: 12px; background: var(--accent); border: none; color: #fff; font-size: 12px; font-family: 'Syne', sans-serif; font-weight: 700; cursor: pointer; white-space: nowrap; flex-shrink: 0; }
-.install-close { background: none; border: none; color: var(--muted); font-size: 18px; cursor: pointer; flex-shrink: 0; }
+/* CATEGORY */
+.cat-picker{display:flex;gap:7px;flex-wrap:wrap;justify-content:center;width:100%}
+.cat-pill{padding:6px 14px;border-radius:100px;font-size:11px;font-family:'DM Mono',monospace;letter-spacing:.8px;cursor:pointer;border:1.5px solid var(--border);background:var(--card);color:var(--muted);text-transform:uppercase;transition:all .18s}
+.cat-pill.on{border-color:var(--accent);color:var(--accent);background:#7c5cfc18}
+
+/* FOOTER */
+.rec-footer{padding:8px 18px 0;display:flex;flex-direction:column;gap:7px;flex-shrink:0}
+.save-main{width:100%;padding:14px;border-radius:16px;background:linear-gradient(135deg,var(--accent),var(--accent2));border:none;font-family:'Syne',sans-serif;font-weight:700;font-size:15px;color:#fff;cursor:pointer;transition:opacity .2s,transform .15s;display:none}
+.save-main.show{display:block}
+.save-main:active{opacity:.88;transform:scale(.98)}
+.discard-btn{width:100%;padding:10px;border-radius:16px;background:none;border:1.5px solid var(--border);font-family:'DM Mono',monospace;font-size:12px;color:var(--muted);cursor:pointer;transition:all .18s;display:none}
+.discard-btn.show{display:block}
+.discard-btn:active{color:var(--red);border-color:var(--red)}
+
+/* TOAST */
+.toast{position:fixed;bottom:calc(var(--safe-bottom)+14px);left:50%;transform:translateX(-50%) translateY(55px);background:#28283a;border:1px solid var(--border);padding:10px 20px;border-radius:100px;font-size:12px;color:var(--text);transition:transform .3s,opacity .3s;z-index:999;white-space:nowrap;opacity:0;pointer-events:none}
+.toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+
+/* INSTALL BANNER */
+.install-banner{margin:10px 14px 0;background:linear-gradient(135deg,#7c5cfc22,#e040fb18);border:1px solid #7c5cfc44;border-radius:14px;padding:10px 14px;display:none;align-items:center;gap:10px}
+.install-banner.show{display:flex}
+.install-text{flex:1;font-size:11px;color:var(--text);line-height:1.5}
+.install-text strong{color:var(--accent);font-family:'Syne',sans-serif}
+.install-cta{padding:7px 13px;border-radius:10px;background:var(--accent);border:none;color:#fff;font-size:11px;font-family:'Syne',sans-serif;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0}
+.install-close{background:none;border:none;color:var(--muted);font-size:17px;cursor:pointer;flex-shrink:0}
 </style>
 </head>
 <body>
 
-<!-- HOME SCREEN -->
+<!-- ═══ HOME ═══ -->
 <div class="screen active" id="homeScreen">
   <div class="status-bar"></div>
   <div class="nav-bar">
     <div class="nav-title">VoiceMemo</div>
-    <div style="display:flex;gap:8px;">
-      <button class="nav-btn" id="clearDoneBtn">🗑️</button>
-      <button class="nav-btn" id="dateBtn">📅</button>
+    <div style="display:flex;gap:7px">
+      <button class="nav-btn" id="clearDoneBtn" title="Hapus selesai">🗑️</button>
+      <button class="nav-btn" id="dateBtn" title="Tanggal">📅</button>
     </div>
   </div>
   <div class="scroll-area">
     <div class="install-banner" id="installBanner">
-      <div class="install-text"><strong>Install Aplikasi</strong><br>Tambahkan ke layar utama HP kamu!</div>
+      <div class="install-text"><strong>Install Aplikasi</strong><br>Tambahkan ke layar utama HP!</div>
       <button class="install-cta" id="installBtn">Install</button>
       <button class="install-close" id="closeBannerBtn">×</button>
     </div>
@@ -244,116 +297,113 @@ body { font-family: 'DM Mono', monospace; color: var(--text); display: flex; fle
       Belum ada catatan.<br>Tekan <strong style="color:var(--accent)">+</strong> untuk mulai!
     </div>
   </div>
-  <button class="fab" id="fabBtn">🎙️</button>
+  <button class="fab" id="fabBtn">✏️</button>
 </div>
 
-<!-- RECORD SCREEN -->
+<!-- ═══ RECORD/TYPE SCREEN ═══ -->
 <div class="screen" id="recordScreen">
   <div class="status-bar"></div>
   <div class="rec-header">
     <button class="back-btn" id="backBtn">←</button>
-    <div class="rec-title">Catatan Baru</div>
+    <div class="rec-title" id="recTitleLabel">Catatan Baru</div>
   </div>
-
   <div class="rec-body">
 
-    <!-- Language -->
-    <div class="lang-section" style="width:100%">
-      <div class="section-label">Pilih Bahasa</div>
-      <div class="lang-grid">
-        <button class="lang-btn on" data-lang="id-ID">
-          <span class="lang-name">🇮🇩 Indonesia</span>
-          <span class="lang-sub">Bahasa Indonesia</span>
-        </button>
-        <button class="lang-btn" data-lang="en-US">
-          <span class="lang-name">🇬🇧 English</span>
-          <span class="lang-sub">US English</span>
-        </button>
-        <button class="lang-btn" data-lang="ar-SA">
-          <span class="lang-name">🇸🇦 Arab</span>
-          <span class="lang-sub">العربية</span>
-        </button>
-        <button class="lang-btn jp-btn" data-lang="ja-JP">
-          <span class="lang-name">🇯🇵 日本語</span>
-          <span class="lang-sub">Japanese</span>
-        </button>
+    <!-- MODE TOGGLE: Voice / Type -->
+    <div class="mode-toggle">
+      <button class="mode-btn on" id="modeVoice" data-mode="voice"><span>🎙️</span> Suara</button>
+      <button class="mode-btn" id="modeType" data-mode="type"><span>⌨️</span> Ketik</button>
+    </div>
+
+    <!-- LANGUAGE (visible in voice mode) -->
+    <div id="voiceSection" style="width:100%;display:flex;flex-direction:column;gap:12px;align-items:center">
+      <div style="width:100%">
+        <div class="section-lbl">Pilih Bahasa</div>
+        <div class="lang-grid">
+          <button class="lang-btn on" data-lang="id-ID"><span class="lang-name">🇮🇩 Indonesia</span><span class="lang-sub">Bahasa Indonesia</span></button>
+          <button class="lang-btn" data-lang="en-US"><span class="lang-name">🇬🇧 English</span><span class="lang-sub">US English</span></button>
+          <button class="lang-btn" data-lang="ar-SA"><span class="lang-name">🇸🇦 Arab</span><span class="lang-sub">العربية</span></button>
+          <button class="lang-btn jp-btn" data-lang="ja-JP"><span class="lang-name">🇯🇵 日本語</span><span class="lang-sub">Japanese</span></button>
+        </div>
+      </div>
+      <div class="jp-script-section" id="jpScriptSection">
+        <div class="jp-script-lbl">🎌 Format aksara yang ditampilkan</div>
+        <div class="jp-script-grid">
+          <button class="jp-script-btn on" data-script="kanji"><span class="jp-sname">漢字</span><span class="jp-ssub">Kanji</span></button>
+          <button class="jp-script-btn on" data-script="hiragana"><span class="jp-sname">ひらがな</span><span class="jp-ssub">Hiragana</span></button>
+          <button class="jp-script-btn on" data-script="katakana"><span class="jp-sname">カタカナ</span><span class="jp-ssub">Katakana</span></button>
+          <button class="jp-script-btn on" data-script="romaji"><span class="jp-sname">Romaji</span><span class="jp-ssub">Latin</span></button>
+        </div>
+        <button class="jp-all-btn on" id="jpAllBtn">✓ Semua Format Aktif</button>
+      </div>
+      <div class="visualizer" id="visualizer">
+        <div class="vis-bar"></div><div class="vis-bar"></div><div class="vis-bar"></div>
+        <div class="vis-bar"></div><div class="vis-bar"></div><div class="vis-bar"></div>
+        <div class="vis-bar"></div><div class="vis-bar"></div><div class="vis-bar"></div>
+        <div class="vis-bar"></div><div class="vis-bar"></div>
+      </div>
+      <div class="mic-area" id="micArea">
+        <div class="ring ring-1"></div><div class="ring ring-2"></div><div class="ring ring-3"></div>
+        <button class="mic-big" id="micBigBtn">🎙️</button>
+      </div>
+      <div class="rec-status" id="recStatus">Pilih bahasa lalu tekan mic</div>
+      <div class="conf-wrap" id="confWrap">
+        <div class="conf-lbl">Akurasi suara <span id="confPct">0%</span></div>
+        <div class="conf-track"><div class="conf-fill" id="confFill"></div></div>
       </div>
     </div>
 
-    <!-- Japanese script selector -->
-    <div class="jp-script-section" id="jpScriptSection">
-      <div class="jp-script-label">🎌 Tampilkan dalam format</div>
-      <div class="jp-script-grid">
-        <button class="jp-script-btn on" data-script="kanji">
-          <span class="jp-script-name">漢字</span>
-          <span class="jp-script-sub">Kanji</span>
-        </button>
-        <button class="jp-script-btn on" data-script="hiragana">
-          <span class="jp-script-name">ひらがな</span>
-          <span class="jp-script-sub">Hiragana</span>
-        </button>
-        <button class="jp-script-btn on" data-script="katakana">
-          <span class="jp-script-name">カタカナ</span>
-          <span class="jp-script-sub">Katakana</span>
-        </button>
-        <button class="jp-script-btn on" data-script="romaji">
-          <span class="jp-script-name">Romaji</span>
-          <span class="jp-script-sub">Latin</span>
-        </button>
+    <!-- TYPE SECTION (hidden by default) -->
+    <div id="typeSection" style="width:100%;display:none;flex-direction:column;gap:10px">
+      <div class="type-hint">
+        Ketik catatan di bawah. Pisahkan beberapa item dengan <strong>koma (,)</strong> atau tekan <strong>Enter</strong> per baris agar tersimpan sebagai checklist.
       </div>
-      <button class="jp-all-btn on" id="jpAllBtn">✓ Semua Format Aktif</button>
+      <div style="width:100%">
+        <div class="section-lbl">Bahasa Jepang?</div>
+        <div style="display:flex;gap:7px">
+          <button class="lang-btn on" data-typelang="other" id="typeLangOther" style="padding:7px 10px"><span class="lang-name" style="font-size:11px">🌐 Lainnya</span></button>
+          <button class="lang-btn jp-btn" data-typelang="ja-JP" id="typeLangJp" style="padding:7px 10px"><span class="lang-name" style="font-size:11px">🇯🇵 日本語</span></button>
+        </div>
+      </div>
+      <textarea class="type-box" id="typeBox" placeholder="Contoh:&#10;cabe merah, bawang putih, tomat&#10;&#10;Atau satu baris satu item:&#10;Beli susu&#10;Meeting jam 10&#10;Kirim laporan"></textarea>
     </div>
 
-    <!-- Visualizer -->
-    <div class="visualizer" id="visualizer">
-      <div class="vis-bar"></div><div class="vis-bar"></div><div class="vis-bar"></div>
-      <div class="vis-bar"></div><div class="vis-bar"></div><div class="vis-bar"></div>
-      <div class="vis-bar"></div><div class="vis-bar"></div><div class="vis-bar"></div>
-      <div class="vis-bar"></div><div class="vis-bar"></div>
+    <!-- DETECTED ITEMS (shared) -->
+    <div class="det-section" id="detSection">
+      <div class="det-title">📋 Item Terdeteksi — tap untuk hapus</div>
+      <div class="det-hint" id="detHint"></div>
+      <div class="det-list" id="detList"></div>
+      <div class="add-row">
+        <input class="add-inp" id="addInp" placeholder="Tambah item manual…" type="text">
+        <button class="add-btn" id="addBtn">＋</button>
+      </div>
     </div>
 
-    <!-- Mic -->
-    <div class="mic-area" id="micArea">
-      <div class="ring ring-1"></div>
-      <div class="ring ring-2"></div>
-      <div class="ring ring-3"></div>
-      <button class="mic-big" id="micBigBtn">🎙️</button>
-    </div>
-
-    <div class="rec-status" id="recStatus">Pilih bahasa lalu tekan mic</div>
-
-    <!-- Confidence bar -->
-    <div class="conf-bar-wrap" id="confWrap">
-      <div class="conf-label">Akurasi suara <span id="confPct">0%</span></div>
-      <div class="conf-track"><div class="conf-fill" id="confFill"></div></div>
-    </div>
-
-    <!-- Edit box -->
-    <div class="edit-wrap">
-      <div class="edit-label">
-        Hasil rekaman — bisa diedit
+    <!-- RAW EDIT (voice mode) -->
+    <div class="edit-wrap" id="editWrap">
+      <div class="edit-lbl">
+        Teks lengkap — bisa diedit
         <span class="edit-clear" id="editClear">Hapus</span>
       </div>
       <textarea class="edit-box" id="editBox" placeholder="Hasil ucapan muncul di sini…" rows="3"></textarea>
     </div>
 
-    <!-- Japanese multi-script preview -->
+    <!-- JP PREVIEW -->
     <div class="jp-preview" id="jpPreview">
-      <div class="jp-preview-title">🎌 Tampilan Multi-Aksara Jepang</div>
+      <div class="jp-prev-title">🎌 Multi-Aksara + Terjemahan Indonesia</div>
       <div id="jpRows"></div>
     </div>
 
-    <!-- Tips -->
+    <!-- TIPS -->
     <div class="tips-panel">
-      <div class="tips-title">💡 Tips agar lebih akurat</div>
-      <div class="tip-item">Bicara pelan & jelas, 1 kalimat sekaligus</div>
-      <div class="tip-item">Hindari tempat berisik / angin kencang</div>
-      <div class="tip-item">Jarak mic ±15–20 cm dari mulut</div>
-      <div class="tip-item">Untuk Jepang: ucapkan dengan aksen Jepang</div>
-      <div class="tip-item">Koreksi teks langsung di kotak di atas</div>
+      <div class="tips-title">💡 Tips rekaman akurat</div>
+      <div class="tip-item">Sebutkan item satu per satu dengan jelas</div>
+      <div class="tip-item">Pisahkan dengan kata "dan", "sama", atau "koma"</div>
+      <div class="tip-item">Bicara pelan, jarak mic ±20cm dari mulut</div>
+      <div class="tip-item">Hindari tempat berisik / angin</div>
+      <div class="tip-item">Gunakan mode Ketik jika rekaman tidak akurat</div>
     </div>
 
-    <!-- Category -->
     <div class="cat-picker" id="catPicker">
       <div class="cat-pill on" data-cat="Umum">Umum</div>
       <div class="cat-pill" data-cat="Kerja">Kerja</div>
@@ -361,7 +411,6 @@ body { font-family: 'DM Mono', monospace; color: var(--text); display: flex; fle
       <div class="cat-pill" data-cat="Belanja">Belanja</div>
       <div class="cat-pill" data-cat="Lainnya">Lainnya</div>
     </div>
-
   </div>
 
   <div class="rec-footer">
@@ -374,333 +423,462 @@ body { font-family: 'DM Mono', monospace; color: var(--text); display: flex; fle
 
 <script>
 // ── STATE ──
-let memos = JSON.parse(localStorage.getItem('vm_memos') || '[]');
-let activeFilter = 'Semua';
-let selectedCat = 'Umum';
-let selectedLang = 'id-ID';
-let activeScripts = new Set(['kanji','hiragana','katakana','romaji']);
-let recognition = null;
-let isListening = false;
-let deferredInstall = null;
+let memos=JSON.parse(localStorage.getItem('vm_memos')||'[]');
+let activeFilter='Semua', selectedCat='Umum', selectedLang='id-ID';
+let activeScripts=new Set(['kanji','hiragana','katakana','romaji']);
+let recognition=null, isListening=false, deferredInstall=null;
+let detectedItems=[], lastFinalText='';
+let inputMode='voice'; // 'voice' | 'type'
+let typeIsJp=false;
 
 // ── UTILS ──
-function save() { localStorage.setItem('vm_memos', JSON.stringify(memos)); }
-function esc(t) { return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-function showToast(msg, dur=2400) {
-  const t = document.getElementById('toast');
-  t.textContent = msg; t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), dur);
+function save(){localStorage.setItem('vm_memos',JSON.stringify(memos))}
+function esc(t){return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+function uid(){return Date.now()+'_'+Math.random().toString(36).slice(2,7)}
+function showToast(msg,dur=2400){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),dur);
 }
 
-// ── SCREEN NAV ──
-function goTo(id) {
-  document.querySelectorAll('.screen').forEach(s => {
-    s.classList.remove('active');
-    if (s.id !== id) s.classList.add('exit');
-  });
-  const next = document.getElementById(id);
-  next.classList.remove('exit');
-  requestAnimationFrame(() => next.classList.add('active'));
+// ── SCREEN ──
+function goTo(id){
+  document.querySelectorAll('.screen').forEach(s=>{s.classList.remove('active');if(s.id!==id)s.classList.add('exit')});
+  const n=document.getElementById(id);n.classList.remove('exit');
+  requestAnimationFrame(()=>n.classList.add('active'));
 }
-document.getElementById('fabBtn').addEventListener('click', () => { resetRecordScreen(); goTo('recordScreen'); });
-document.getElementById('backBtn').addEventListener('click', () => { if(isListening) stopRecording(); goTo('homeScreen'); });
+document.getElementById('fabBtn').addEventListener('click',()=>{resetAll();goTo('recordScreen')});
+document.getElementById('backBtn').addEventListener('click',()=>{if(isListening)stopRecording();goTo('homeScreen')});
 
 // ── FILTER ──
-document.querySelectorAll('.chip').forEach(c => {
-  c.addEventListener('click', () => {
+document.querySelectorAll('.chip').forEach(c=>{
+  c.addEventListener('click',()=>{
     document.querySelectorAll('.chip').forEach(x=>x.classList.remove('on'));
-    c.classList.add('on'); activeFilter = c.dataset.filter; renderMemos();
+    c.classList.add('on');activeFilter=c.dataset.filter;renderMemos();
   });
 });
-document.getElementById('dateBtn').addEventListener('click', () =>
+document.getElementById('dateBtn').addEventListener('click',()=>
   showToast(new Date().toLocaleDateString('id-ID',{weekday:'long',day:'numeric',month:'long',year:'numeric'}),3000));
-document.getElementById('clearDoneBtn').addEventListener('click', () => {
-  const count = memos.filter(m=>m.done).length;
+document.getElementById('clearDoneBtn').addEventListener('click',()=>{
+  const count=memos.filter(m=>isMemoDone(m)).length;
   if(!count){showToast('Tidak ada catatan selesai');return;}
-  memos=memos.filter(m=>!m.done); save(); renderMemos(); showToast(`${count} catatan dihapus`);
+  memos=memos.filter(m=>!isMemoDone(m));
+  save();renderMemos();showToast(`${count} catatan dihapus`);
+});
+function isMemoDone(m){return m.items?m.items.every(i=>i.checked):!!m.done}
+
+// ── MODE TOGGLE ──
+document.querySelectorAll('.mode-btn').forEach(b=>{
+  b.addEventListener('click',()=>{
+    document.querySelectorAll('.mode-btn').forEach(x=>x.classList.remove('on'));
+    b.classList.add('on');
+    inputMode=b.dataset.mode;
+    const isVoice=inputMode==='voice';
+    document.getElementById('voiceSection').style.display=isVoice?'flex':'none';
+    document.getElementById('typeSection').style.display=isVoice?'none':'flex';
+    document.getElementById('editWrap').style.display=isVoice?'block':'none';
+    document.getElementById('recTitleLabel').textContent=isVoice?'Catatan Baru':'Ketik Catatan';
+    if(!isVoice&&isListening)stopRecording();
+    // sync type textarea with voice if any text
+    if(!isVoice){
+      const voiceText=document.getElementById('editBox').value;
+      if(voiceText&&!document.getElementById('typeBox').value){
+        document.getElementById('typeBox').value=voiceText;
+        parseTypeBox();
+      }
+    }
+  });
 });
 
-// ── JAPANESE CONVERSION ──
-// Hiragana <-> Katakana conversion
-function hiraganaToKatakana(str) {
-  return str.replace(/[\u3041-\u3096]/g, c => String.fromCharCode(c.charCodeAt(0)+0x60));
-}
-function katakanaToHiragana(str) {
-  return str.replace(/[\u30A1-\u30F6]/g, c => String.fromCharCode(c.charCodeAt(0)-0x60));
-}
+// ── TYPE MODE LANGUAGE ──
+document.getElementById('typeLangOther').addEventListener('click',()=>{
+  document.getElementById('typeLangOther').classList.add('on');
+  document.getElementById('typeLangJp').classList.remove('on');
+  typeIsJp=false;
+  document.getElementById('typeBox').classList.remove('jp-input');
+  document.getElementById('jpPreview').classList.remove('show');
+});
+document.getElementById('typeLangJp').addEventListener('click',()=>{
+  document.getElementById('typeLangJp').classList.add('on');
+  document.getElementById('typeLangOther').classList.remove('on');
+  typeIsJp=true;
+  document.getElementById('typeBox').classList.add('jp-input');
+  document.getElementById('typeBox').style.fontFamily="'Noto Sans JP', monospace";
+  const v=document.getElementById('typeBox').value.trim();
+  if(v)updateJpPreview(v);
+});
 
-// Simple romaji mapping from hiragana
-const hiraToRoma = {
-  'あ':'a','い':'i','う':'u','え':'e','お':'o',
-  'か':'ka','き':'ki','く':'ku','け':'ke','こ':'ko',
-  'さ':'sa','し':'shi','す':'su','せ':'se','そ':'so',
-  'た':'ta','ち':'chi','つ':'tsu','て':'te','と':'to',
-  'な':'na','に':'ni','ぬ':'nu','ね':'ne','の':'no',
-  'は':'ha','ひ':'hi','ふ':'fu','へ':'he','ほ':'ho',
-  'ま':'ma','み':'mi','む':'mu','め':'me','も':'mo',
-  'や':'ya','ゆ':'yu','よ':'yo',
-  'ら':'ra','り':'ri','る':'ru','れ':'re','ろ':'ro',
-  'わ':'wa','を':'wo','ん':'n',
-  'が':'ga','ぎ':'gi','ぐ':'gu','げ':'ge','ご':'go',
-  'ざ':'za','じ':'ji','ず':'zu','ぜ':'ze','ぞ':'zo',
-  'だ':'da','ぢ':'ji','づ':'zu','で':'de','ど':'do',
-  'ば':'ba','び':'bi','ぶ':'bu','べ':'be','ぼ':'bo',
-  'ぱ':'pa','ぴ':'pi','ぷ':'pu','ぺ':'pe','ぽ':'po',
-  'きゃ':'kya','きゅ':'kyu','きょ':'kyo',
-  'しゃ':'sha','しゅ':'shu','しょ':'sho',
-  'ちゃ':'cha','ちゅ':'chu','ちょ':'cho',
-  'にゃ':'nya','にゅ':'nyu','にょ':'nyo',
-  'ひゃ':'hya','ひゅ':'hyu','ひょ':'hyo',
-  'みゃ':'mya','みゅ':'myu','みょ':'myo',
-  'りゃ':'rya','りゅ':'ryu','りょ':'ryo',
-  'ぎゃ':'gya','ぎゅ':'gyu','ぎょ':'gyo',
-  'じゃ':'ja','じゅ':'ju','じょ':'jo',
-  'びゃ':'bya','びゅ':'byu','びょ':'byo',
-  'ぴゃ':'pya','ぴゅ':'pyu','ぴょ':'pyo',
-  'っ':'(tt)','ー':'-','。':'. ','、':', ','「':'"','」':'"','！':'!','？':'?'
-};
-
-function hiraganaToRomaji(str) {
-  // Convert katakana to hiragana first
-  const hira = katakanaToHiragana(str);
-  let result = '';
-  for (let i = 0; i < hira.length; i++) {
-    const two = hira.slice(i,i+2);
-    if (hiraToRoma[two]) { result += hiraToRoma[two]; i++; continue; }
-    const one = hira[i];
-    result += hiraToRoma[one] || one;
+// TYPE BOX input
+document.getElementById('typeBox').addEventListener('input',()=>{
+  parseTypeBox();
+  if(typeIsJp){
+    const v=document.getElementById('typeBox').value.trim();
+    updateJpPreview(v);
   }
+});
+
+function parseTypeBox(){
+  const raw=document.getElementById('typeBox').value;
+  if(!raw.trim()){
+    detectedItems=[];renderDetItems();
+    document.getElementById('saveMainBtn').classList.remove('show');
+    document.getElementById('discardBtn').classList.remove('show');
+    return;
+  }
+  detectedItems=smartDetect(raw);
+  renderDetItems();
+  document.getElementById('saveMainBtn').classList.add('show');
+  document.getElementById('discardBtn').classList.add('show');
+}
+
+// ── SMART DETECT — anti-duplicate ──
+function smartDetect(text){
+  // Split by comma, newline, and Indonesian/JP conjunctions
+  const sep=/[,،、\n]|(?:\s+(?:dan|sama|dengan|serta|plus|あと|それから|و)\s+)/gi;
+  const parts=text.split(sep).map(s=>s.trim()).filter(s=>s.length>0);
+
+  // Deduplicate: normalize and keep only first occurrence
+  const seen=new Set();
+  const unique=[];
+  parts.forEach(item=>{
+    const key=item.toLowerCase().replace(/\s+/g,' ').trim();
+    if(!seen.has(key)){seen.add(key);unique.push(item);}
+  });
+
+  // If only 1 item (no separators found), return single item
+  return unique.map(text=>({id:uid(),text:text.trim(),active:true}));
+}
+
+function renderDetItems(){
+  const sec=document.getElementById('detSection');
+  const list=document.getElementById('detList');
+  const hint=document.getElementById('detHint');
+  if(!detectedItems.length){sec.classList.remove('show');return;}
+  // Only show checklist section if >1 active items
+  const active=detectedItems.filter(i=>i.active);
+  sec.classList.toggle('show', detectedItems.length>0);
+  hint.textContent=active.length>1
+    ?`${active.length} item — akan disimpan sebagai checklist`
+    :'1 item — akan disimpan sebagai catatan biasa';
+  list.innerHTML='';
+  detectedItems.forEach(item=>{
+    const el=document.createElement('div');
+    el.className='det-item'+(item.active?'':' off');
+    el.innerHTML=`
+      <div class="det-chk">${item.active?'✓':''}</div>
+      <div class="det-text">${esc(item.text)}</div>
+      <button class="det-del" data-id="${item.id}">✕</button>`;
+    el.querySelector('.det-chk').addEventListener('click',()=>toggleDetItem(item.id));
+    el.querySelector('.det-text').addEventListener('click',()=>toggleDetItem(item.id));
+    el.querySelector('.det-del').addEventListener('click',e=>{e.stopPropagation();removeDetItem(item.id)});
+    list.appendChild(el);
+  });
+}
+function toggleDetItem(id){
+  const i=detectedItems.find(x=>x.id===id);
+  if(i){i.active=!i.active;renderDetItems();}
+}
+function removeDetItem(id){
+  detectedItems=detectedItems.filter(x=>x.id!==id);
+  renderDetItems();
+}
+document.getElementById('addBtn').addEventListener('click',()=>{
+  const inp=document.getElementById('addInp');
+  const v=inp.value.trim();
+  if(!v)return;
+  detectedItems.push({id:uid(),text:v,active:true});
+  inp.value='';renderDetItems();
+  document.getElementById('saveMainBtn').classList.add('show');
+  document.getElementById('discardBtn').classList.add('show');
+});
+document.getElementById('addInp').addEventListener('keydown',e=>{
+  if(e.key==='Enter'){document.getElementById('addBtn').click();}
+});
+
+// ── JAPANESE ──
+function k2h(s){return s.replace(/[\u30A1-\u30F6]/g,c=>String.fromCharCode(c.charCodeAt(0)-0x60))}
+function h2k(s){return s.replace(/[\u3041-\u3096]/g,c=>String.fromCharCode(c.charCodeAt(0)+0x60))}
+const H2R={'あ':'a','い':'i','う':'u','え':'e','お':'o','か':'ka','き':'ki','く':'ku','け':'ke','こ':'ko','さ':'sa','し':'shi','す':'su','せ':'se','そ':'so','た':'ta','ち':'chi','つ':'tsu','て':'te','と':'to','な':'na','に':'ni','ぬ':'nu','ね':'ne','の':'no','は':'ha','ひ':'hi','ふ':'fu','へ':'he','ほ':'ho','ま':'ma','み':'mi','む':'mu','め':'me','も':'mo','や':'ya','ゆ':'yu','よ':'yo','ら':'ra','り':'ri','る':'ru','れ':'re','ろ':'ro','わ':'wa','を':'wo','ん':'n','が':'ga','ぎ':'gi','ぐ':'gu','げ':'ge','ご':'go','ざ':'za','じ':'ji','ず':'zu','ぜ':'ze','ぞ':'zo','だ':'da','ぢ':'ji','づ':'zu','で':'de','ど':'do','ば':'ba','び':'bi','ぶ':'bu','べ':'be','ぼ':'bo','ぱ':'pa','ぴ':'pi','ぷ':'pu','ぺ':'pe','ぽ':'po','きゃ':'kya','きゅ':'kyu','きょ':'kyo','しゃ':'sha','しゅ':'shu','しょ':'sho','ちゃ':'cha','ちゅ':'chu','ちょ':'cho','にゃ':'nya','にゅ':'nyu','にょ':'nyo','ひゃ':'hya','ひゅ':'hyu','ひょ':'hyo','みゃ':'mya','みゅ':'myu','みょ':'myo','りゃ':'rya','りゅ':'ryu','りょ':'ryo','ぎゃ':'gya','ぎゅ':'gyu','ぎょ':'gyo','じゃ':'ja','じゅ':'ju','じょ':'jo','びゃ':'bya','びゅ':'byu','びょ':'byo','ぴゃ':'pya','ぴゅ':'pyu','ぴょ':'pyo','っ':'(tt)','ー':'-','。':'. ','、':', ','「':'"','」':'"','！':'!','？':'?'};
+function toRomaji(s){
+  const h=k2h(s);let r='';
+  for(let i=0;i<h.length;i++){
+    const two=h.slice(i,i+2);
+    if(H2R[two]){r+=H2R[two];i++;continue;}
+    r+=H2R[h[i]]||h[i];
+  }
+  return r;
+}
+const JPDICT={'今日':'hari ini','明日':'besok','昨日':'kemarin','食べる':'makan','飲む':'minum','行く':'pergi','来る':'datang','見る':'melihat','聞く':'mendengar/bertanya','話す':'berbicara','仕事':'pekerjaan','学校':'sekolah','家':'rumah','電話':'telepon','メール':'email','水':'air','ご飯':'nasi','パン':'roti','コーヒー':'kopi','お茶':'teh','買う':'membeli','売る':'menjual','書く':'menulis','読む':'membaca','勉強':'belajar','時間':'waktu','今':'sekarang','後で':'nanti','早く':'cepat','ゆっくり':'pelan-pelan','ありがとう':'terima kasih','すみません':'permisi/maaf','はい':'ya','いいえ':'tidak','おはよう':'selamat pagi','こんにちは':'halo/selamat siang','こんばんは':'selamat malam','暑い':'panas','寒い':'dingin','おいしい':'enak','辛い':'pedas','甘い':'manis','しょっぱい':'asin','酸っぱい':'asam','苦い':'pahit','大きい':'besar','小さい':'kecil','多い':'banyak','少ない':'sedikit','好き':'suka','嫌い':'tidak suka','楽しい':'menyenangkan','難しい':'sulit','簡単':'mudah','会議':'rapat','資料':'dokumen','確認':'konfirmasi','送る':'mengirim','受け取る':'menerima','功労':'jasa/kontribusi','英雄':'pahlawan','清廉':'bersih/jujur','今日は':'hari ini','暑い':'panas','強い':'kuat','優しい':'baik hati','かわいい':'imut/lucu','格好いい':'keren','面白い':'menarik/lucu','眠い':'mengantuk','疲れた':'lelah','お腹すいた':'lapar','喉渇いた':'haus','頭痛い':'sakit kepala','嬉しい':'senang','悲しい':'sedih','怒る':'marah','笑う':'tertawa','泣く':'menangis','走る':'berlari','歩く':'berjalan','座る':'duduk','立つ':'berdiri','寝る':'tidur','起きる':'bangun/terjaga'};
+function translateJp(text){
+  if(!text)return '';
+  let result=text;
+  // Sort keys longest first for greedy matching
+  const keys=Object.keys(JPDICT).sort((a,b)=>b.length-a.length);
+  keys.forEach(jp=>{result=result.replace(new RegExp(jp,'g'),`[${JPDICT[jp]}]`);});
+  // If unchanged and has only kana
+  const kanaOnly=text.replace(/[^\u3040-\u30FF]/g,'');
+  if(result===text&&kanaOnly.length>0)return '(arti tidak tersedia — ucapkan lebih jelas)';
+  if(result===text)return '(arti tidak tersedia)';
   return result;
 }
-
-// Extract hiragana/katakana from mixed text (kanji + kana)
-function extractHiragana(text) {
-  // The speech recognition returns kanji+kana mix; we extract kana
-  return text.replace(/[^\u3040-\u309F\u30A0-\u30FF\s。、！？「」]/g, '');
+function genJpScripts(t){
+  const kana=k2h(t.replace(/[^\u3040-\u30FF\s。、！？「」]/g,''));
+  return{kanji:t,hiragana:kana||t,katakana:h2k(kana||k2h(t)),romaji:toRomaji(t),terjemahan:translateJp(t)};
 }
-
-// Generate Japanese script representations
-function generateJpScripts(kanjiText) {
-  const hiragana = katakanaToHiragana(kanjiText.replace(/[^\u3040-\u30FF\s。、！？「」]/g,''));
-  const katakana = hiraganaToKatakana(katakanaToHiragana(kanjiText.replace(/[^\u3040-\u30FF\s。、！？「」]/g,'')));
-  const romaji = hiraganaToRomaji(kanjiText);
-  return { kanji: kanjiText, hiragana, katakana, romaji };
-}
-
-function updateJpPreview(text) {
-  if (!text || selectedLang !== 'ja-JP') {
-    document.getElementById('jpPreview').classList.remove('show'); return;
-  }
-  const scripts = generateJpScripts(text);
-  const rows = document.getElementById('jpRows');
-  rows.innerHTML = '';
-
-  const scriptDefs = [
-    { key:'kanji',    label:'漢字 Kanji',    val: scripts.kanji,    cls:'' },
-    { key:'hiragana', label:'ひら Hiragana', val: scripts.hiragana, cls:'' },
-    { key:'katakana', label:'カタ Katakana', val: scripts.katakana, cls:'' },
-    { key:'romaji',   label:'ABC Romaji',    val: scripts.romaji,   cls:'romaji' },
+function updateJpPreview(text){
+  if(!text){document.getElementById('jpPreview').classList.remove('show');return;}
+  const s=genJpScripts(text);
+  const rows=document.getElementById('jpRows');rows.innerHTML='';
+  const defs=[
+    {key:'kanji',   lbl:'漢字 Kanji',     val:s.kanji,       cls:''},
+    {key:'hiragana',lbl:'ひら Hiragana',  val:s.hiragana,    cls:''},
+    {key:'katakana',lbl:'カタ Katakana',  val:s.katakana,    cls:''},
+    {key:'romaji',  lbl:'ABC Romaji',     val:s.romaji,      cls:'rom'},
+    {key:'trans',   lbl:'🇮🇩 Terjemahan', val:s.terjemahan,  cls:'tl'},
   ];
-
-  scriptDefs.forEach(s => {
-    if (!activeScripts.has(s.key) || !s.val) return;
-    const row = document.createElement('div');
-    row.className = 'jp-row';
-    row.innerHTML = `<div class="jp-row-label">${s.label}</div><div class="jp-row-val ${s.cls}">${esc(s.val)}</div>`;
+  defs.forEach(d=>{
+    if(d.key!=='trans'&&!activeScripts.has(d.key))return;
+    if(!d.val)return;
+    const row=document.createElement('div');row.className='jp-pr';
+    row.innerHTML=`<div class="jp-pr-lbl">${d.lbl}</div><div class="jp-pr-val ${d.cls}">${esc(d.val)}</div>`;
     rows.appendChild(row);
   });
-
-  document.getElementById('jpPreview').classList.toggle('show', rows.children.length > 0);
+  document.getElementById('jpPreview').classList.toggle('show',rows.children.length>0);
 }
 
 // ── RENDER MEMOS ──
-function renderMemos() {
-  const list = document.getElementById('memoList');
-  const empty = document.getElementById('emptyState');
-  const filtered = memos.filter(m => {
-    if (activeFilter==='Aktif') return !m.done;
-    if (activeFilter==='Selesai') return m.done;
-    if (activeFilter==='🇯🇵 Jepang') return m.lang==='ja-JP';
-    if (['Kerja','Pribadi','Belanja','Lainnya'].includes(activeFilter)) return m.cat===activeFilter;
+function renderMemos(){
+  const list=document.getElementById('memoList');
+  const empty=document.getElementById('emptyState');
+  const filtered=memos.filter(m=>{
+    const done=isMemoDone(m);
+    if(activeFilter==='Aktif')return!done;
+    if(activeFilter==='Selesai')return done;
+    if(activeFilter==='🇯🇵 Jepang')return m.lang==='ja-JP';
+    if(['Kerja','Pribadi','Belanja','Lainnya'].includes(activeFilter))return m.cat===activeFilter;
     return true;
   });
-  document.getElementById('statTotal').textContent = memos.length;
-  document.getElementById('statDone').textContent = memos.filter(m=>m.done).length;
-  document.getElementById('statLeft').textContent = memos.filter(m=>!m.done).length;
-  if (!filtered.length) { list.innerHTML=''; empty.classList.add('show'); return; }
+  const total=memos.length;
+  const done=memos.filter(m=>isMemoDone(m)).length;
+  document.getElementById('statTotal').textContent=total;
+  document.getElementById('statDone').textContent=done;
+  document.getElementById('statLeft').textContent=total-done;
+  if(!filtered.length){list.innerHTML='';empty.classList.add('show');return;}
   empty.classList.remove('show');
-  const groups = {};
-  filtered.forEach(m => {
-    const d = new Date(m.ts).toLocaleDateString('id-ID',{weekday:'long',day:'numeric',month:'short'});
-    if (!groups[d]) groups[d]=[];
-    groups[d].push(m);
+  const groups={};
+  filtered.forEach(m=>{
+    const d=new Date(m.ts).toLocaleDateString('id-ID',{weekday:'long',day:'numeric',month:'short'});
+    if(!groups[d])groups[d]=[];groups[d].push(m);
   });
   list.innerHTML='';
-  Object.entries(groups).forEach(([date,items]) => {
-    const sep=document.createElement('div'); sep.className='date-sep'; sep.textContent=date;
-    list.appendChild(sep);
-    items.forEach(m => {
-      const el=document.createElement('div');
-      const isJp = m.lang==='ja-JP';
-      el.className='memo-card'+(m.done?' done':'')+(isJp?' jp-card':'');
-      const t=new Date(m.ts).toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'});
-
-      let content = '';
-      if (isJp && m.scripts) {
-        const s = m.scripts;
-        const activeS = m.activeScripts || ['kanji','hiragana','katakana','romaji'];
-        content = '<div class="jp-block">';
-        if (activeS.includes('kanji') && s.kanji) content+=`<div class="jp-kanji">${esc(s.kanji)}</div>`;
-        if (activeS.includes('hiragana') && s.hiragana) content+=`<span class="jp-label">ひら</span><div class="jp-hiragana">${esc(s.hiragana)}</div>`;
-        if (activeS.includes('katakana') && s.katakana) content+=`<span class="jp-label">カタ</span><div class="jp-katakana">${esc(s.katakana)}</div>`;
-        if (activeS.includes('romaji') && s.romaji) content+=`<span class="jp-label">abc</span><div class="jp-romaji">${esc(s.romaji)}</div>`;
-        content += '</div>';
-      } else {
-        content = `<div class="memo-text">${esc(m.text)}</div>`;
-      }
-
-      el.innerHTML = `
-        <button class="check" data-id="${m.id}">✓</button>
-        <div class="memo-body">
-          ${content}
-          <div class="memo-footer">
-            <span class="memo-cat">${isJp?'🇯🇵 '+m.cat:m.cat}</span>
-            <span class="memo-time">${t}</span>
-          </div>
-        </div>
-        <button class="del-btn" data-id="${m.id}">✕</button>`;
-      el.querySelector('.check').addEventListener('click',()=>toggleDone(m.id));
-      el.querySelector('.del-btn').addEventListener('click',()=>deleteMemo(m.id));
-      list.appendChild(el);
-    });
+  Object.entries(groups).forEach(([date,items])=>{
+    const sep=document.createElement('div');sep.className='date-sep';sep.textContent=date;list.appendChild(sep);
+    items.forEach(m=>list.appendChild(buildCard(m)));
   });
 }
-function toggleDone(id){const m=memos.find(x=>x.id===id);if(m){m.done=!m.done;save();renderMemos();}}
+
+function buildCard(m){
+  const el=document.createElement('div');
+  const isJp=m.lang==='ja-JP';
+  const hasItems=m.items&&m.items.length>0;
+  const allDone=isMemoDone(m);
+  el.className='memo-card'+(allDone?' all-done':'')+(isJp?' jp-card':'')+(hasItems?' list-card':'');
+  const t=new Date(m.ts).toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'});
+
+  // Title row
+  let html=`<div class="memo-top"><div class="memo-title">${esc(m.title||m.text||'').slice(0,60)}</div><button class="del-btn" data-id="${m.id}">✕</button></div>`;
+
+  // Content
+  if(hasItems){
+    const doneC=m.items.filter(i=>i.checked).length;
+    const totalC=m.items.length;
+    html+=`<div class="checklist">`;
+    m.items.forEach(item=>{
+      html+=`<div class="check-item${item.checked?' checked':''}" data-mid="${m.id}" data-iid="${item.id}">
+        <div class="item-box">${item.checked?'✓':''}</div>
+        <div class="item-text">${esc(item.text)}</div>
+      </div>`;
+    });
+    html+=`</div><div class="prog-bar"><div class="prog-fill" style="width:${Math.round(doneC/totalC*100)}%"></div></div>`;
+    // footer
+    html+=`<div class="memo-footer"><span class="memo-cat">${isJp?'🇯🇵 ':''} ${esc(m.cat)}</span><span class="memo-time">${t}</span><span class="memo-prog">${doneC}/${totalC} ✓</span></div>`;
+  } else if(isJp&&m.scripts){
+    // JP single note
+    const s=m.scripts;const aS=m.activeScripts||['kanji','hiragana','katakana','romaji'];
+    html+=`<div class="jp-section">`;
+    if(aS.includes('kanji')&&s.kanji) html+=`<div class="jp-row-m"><div class="jp-lbl">漢字</div><div class="jp-val">${esc(s.kanji)}</div></div>`;
+    if(aS.includes('hiragana')&&s.hiragana) html+=`<div class="jp-row-m"><div class="jp-lbl">ひら</div><div class="jp-val">${esc(s.hiragana)}</div></div>`;
+    if(aS.includes('katakana')&&s.katakana) html+=`<div class="jp-row-m"><div class="jp-lbl">カタ</div><div class="jp-val">${esc(s.katakana)}</div></div>`;
+    if(aS.includes('romaji')&&s.romaji) html+=`<div class="jp-row-m"><div class="jp-lbl">Romaji</div><div class="jp-val rom">${esc(s.romaji)}</div></div>`;
+    if(s.terjemahan) html+=`<div class="jp-row-m"><div class="jp-lbl">🇮🇩 Arti</div><div class="jp-val tl">${esc(s.terjemahan)}</div></div>`;
+    html+=`</div>`;
+    html+=`<div class="memo-footer"><span class="memo-cat">🇯🇵 ${esc(m.cat)}</span><span class="memo-time">${t}</span></div>`;
+  } else {
+    // Simple note
+    html+=`<div class="single-row">
+      <div class="single-box${m.done?' checked':''}" data-id="${m.id}"></div>
+      <div class="single-text${m.done?' done':''}">` +esc(m.text||'')+ `</div>
+    </div>`;
+    html+=`<div class="memo-footer"><span class="memo-cat">${esc(m.cat)}</span><span class="memo-time">${t}</span></div>`;
+  }
+
+  el.innerHTML=html;
+  el.querySelector('.del-btn').addEventListener('click',()=>deleteMemo(m.id));
+
+  if(hasItems){
+    el.querySelectorAll('.check-item').forEach(ci=>{
+      ci.addEventListener('click',()=>{
+        const memo=memos.find(x=>x.id===ci.dataset.mid);
+        if(!memo)return;
+        const item=memo.items.find(x=>x.id===ci.dataset.iid);
+        if(item){item.checked=!item.checked;save();renderMemos();}
+      });
+    });
+  } else if(!isJp){
+    const sb=el.querySelector('.single-box');
+    if(sb) sb.addEventListener('click',()=>{m.done=!m.done;save();renderMemos();});
+  }
+  return el;
+}
 function deleteMemo(id){memos=memos.filter(x=>x.id!==id);save();renderMemos();showToast('Catatan dihapus');}
 
-// ── LANGUAGE SELECT ──
-document.querySelectorAll('.lang-btn').forEach(b => {
-  b.addEventListener('click', () => {
-    document.querySelectorAll('.lang-btn').forEach(x=>x.classList.remove('on'));
-    b.classList.add('on');
-    selectedLang = b.dataset.lang;
-    const isJp = selectedLang==='ja-JP';
-    document.getElementById('jpScriptSection').classList.toggle('show', isJp);
-    document.getElementById('micBigBtn').classList.toggle('jp-mode', isJp);
-    document.getElementById('visualizer').classList.toggle('jp-mode', isJp);
-    document.getElementById('micArea').classList.toggle('jp-rings', isJp);
-    document.getElementById('editBox').classList.toggle('jp-input', isJp);
-    document.getElementById('editBox').style.fontFamily = isJp ? "'Noto Sans JP', monospace" : "'DM Mono', monospace";
-    if (!isJp) document.getElementById('jpPreview').classList.remove('show');
-    if (isListening) { stopRecording(); setTimeout(startRecording,300); }
+// ── LANGUAGE / SCRIPTS ──
+document.querySelectorAll('.lang-btn[data-lang]').forEach(b=>{
+  b.addEventListener('click',()=>{
+    document.querySelectorAll('.lang-btn[data-lang]').forEach(x=>x.classList.remove('on'));
+    b.classList.add('on');selectedLang=b.dataset.lang;
+    const isJp=selectedLang==='ja-JP';
+    document.getElementById('jpScriptSection').classList.toggle('show',isJp);
+    document.getElementById('micBigBtn').classList.toggle('jp-mode',isJp);
+    document.getElementById('visualizer').classList.toggle('jp-mode',isJp);
+    document.getElementById('micArea').classList.toggle('jp-rings',isJp);
+    document.getElementById('editBox').classList.toggle('jp-input',isJp);
+    if(!isJp)document.getElementById('jpPreview').classList.remove('show');
+    if(isListening){stopRecording();setTimeout(startRecording,300);}
   });
 });
-
-// ── SCRIPT SELECTOR ──
-document.querySelectorAll('.jp-script-btn').forEach(b => {
-  b.addEventListener('click', () => {
+document.querySelectorAll('.jp-script-btn').forEach(b=>{
+  b.addEventListener('click',()=>{
     b.classList.toggle('on');
-    const sc = b.dataset.script;
-    if (b.classList.contains('on')) activeScripts.add(sc); else activeScripts.delete(sc);
-    const allOn = activeScripts.size===4;
-    document.getElementById('jpAllBtn').classList.toggle('on', allOn);
-    document.getElementById('jpAllBtn').textContent = allOn ? '✓ Semua Format Aktif' : '☐ Pilih Semua';
+    const sc=b.dataset.script;
+    if(b.classList.contains('on'))activeScripts.add(sc);else activeScripts.delete(sc);
+    const allOn=activeScripts.size===4;
+    document.getElementById('jpAllBtn').classList.toggle('on',allOn);
+    document.getElementById('jpAllBtn').textContent=allOn?'✓ Semua Format Aktif':'☐ Pilih Semua';
     updateJpPreview(document.getElementById('editBox').value);
   });
 });
-document.getElementById('jpAllBtn').addEventListener('click', () => {
-  const allOn = activeScripts.size===4;
-  if (allOn) {
-    activeScripts.clear();
-    document.querySelectorAll('.jp-script-btn').forEach(b=>b.classList.remove('on'));
-    document.getElementById('jpAllBtn').classList.remove('on');
-    document.getElementById('jpAllBtn').textContent='☐ Pilih Semua';
-  } else {
-    activeScripts = new Set(['kanji','hiragana','katakana','romaji']);
-    document.querySelectorAll('.jp-script-btn').forEach(b=>b.classList.add('on'));
-    document.getElementById('jpAllBtn').classList.add('on');
-    document.getElementById('jpAllBtn').textContent='✓ Semua Format Aktif';
-  }
+document.getElementById('jpAllBtn').addEventListener('click',()=>{
+  const allOn=activeScripts.size===4;
+  if(allOn){activeScripts.clear();document.querySelectorAll('.jp-script-btn').forEach(b=>b.classList.remove('on'));document.getElementById('jpAllBtn').classList.remove('on');document.getElementById('jpAllBtn').textContent='☐ Pilih Semua';}
+  else{activeScripts=new Set(['kanji','hiragana','katakana','romaji']);document.querySelectorAll('.jp-script-btn').forEach(b=>b.classList.add('on'));document.getElementById('jpAllBtn').classList.add('on');document.getElementById('jpAllBtn').textContent='✓ Semua Format Aktif';}
   updateJpPreview(document.getElementById('editBox').value);
 });
 
-// ── CATEGORY ──
+// CATEGORY
 document.getElementById('catPicker').querySelectorAll('.cat-pill').forEach(p=>{
-  p.addEventListener('click',()=>{
-    document.querySelectorAll('.cat-pill').forEach(x=>x.classList.remove('on'));
-    p.classList.add('on'); selectedCat=p.dataset.cat;
-  });
+  p.addEventListener('click',()=>{document.querySelectorAll('.cat-pill').forEach(x=>x.classList.remove('on'));p.classList.add('on');selectedCat=p.dataset.cat;});
 });
 
-// ── EDIT BOX ──
-document.getElementById('editClear').addEventListener('click',()=>{
-  document.getElementById('editBox').value='';
-  document.getElementById('editBox').removeAttribute('data-saved');
-  document.getElementById('saveMainBtn').classList.remove('show');
-  document.getElementById('discardBtn').classList.remove('show');
-  document.getElementById('confWrap').classList.remove('show');
-  document.getElementById('jpPreview').classList.remove('show');
-});
+// EDIT BOX (voice)
+document.getElementById('editClear').addEventListener('click',clearAll);
 document.getElementById('editBox').addEventListener('input',()=>{
   const v=document.getElementById('editBox').value.trim();
-  document.getElementById('saveMainBtn').classList.toggle('show',v.length>0);
-  document.getElementById('discardBtn').classList.toggle('show',v.length>0);
-  if (selectedLang==='ja-JP') updateJpPreview(v);
+  const isJp=selectedLang==='ja-JP';
+  showSaveBtns(v.length>0);
+  if(isJp)updateJpPreview(v);
+  else{detectedItems=smartDetect(v);renderDetItems();}
 });
 
-// ── CONFIDENCE ──
-function setConfidence(val){
+function showSaveBtns(show){
+  document.getElementById('saveMainBtn').classList.toggle('show',show);
+  document.getElementById('discardBtn').classList.toggle('show',show);
+}
+function clearAll(){
+  stopRecording();
+  document.getElementById('editBox').value='';
+  document.getElementById('editBox').removeAttribute('data-saved');
+  document.getElementById('typeBox').value='';
+  lastFinalText='';detectedItems=[];
+  renderDetItems();showSaveBtns(false);
+  document.getElementById('confWrap').classList.remove('show');
+  document.getElementById('jpPreview').classList.remove('show');
+  document.getElementById('recStatus').textContent='Pilih bahasa lalu tekan mic';
+  document.getElementById('recStatus').classList.remove('live');
+}
+
+// CONFIDENCE
+function setConf(val){
   const pct=Math.round(val*100);
   document.getElementById('confPct').textContent=pct+'%';
   document.getElementById('confFill').style.width=pct+'%';
   document.getElementById('confWrap').classList.add('show');
 }
 
-// ── SPEECH RECOGNITION ──
-function initRecognition(){
+// ── SPEECH RECOGNITION — anti-duplicate ──
+function isTooSimilar(a,b){
+  if(!b||!a)return false;
+  a=a.toLowerCase().trim();b=b.toLowerCase().trim();
+  if(a===b||b.endsWith(a)||b.includes(a))return true;
+  // Levenshtein quick ratio
+  if(Math.abs(a.length-b.length)/Math.max(a.length,b.length,1)<0.15&&b.includes(a.slice(0,Math.ceil(a.length*.7))))return true;
+  return false;
+}
+
+function initRec(){
   const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
   if(!SR){showToast('Gunakan Chrome untuk rekam suara');return null;}
   const r=new SR();
   r.lang=selectedLang;
-  r.continuous=true;
+  r.continuous=false; // single-shot prevents duplication
   r.interimResults=true;
   r.maxAlternatives=3;
+
   r.onresult=e=>{
-    let interim='';
-    for(let i=e.resultIndex;i<e.results.length;i++){
+    let interim='',finalPart='';
+    for(let i=0;i<e.results.length;i++){
       const res=e.results[i];
       if(res.isFinal){
         let best=res[0];
-        for(let j=1;j<res.length;j++) if(res[j].confidence>best.confidence) best=res[j];
-        const box=document.getElementById('editBox');
-        const prev=box.getAttribute('data-saved')||'';
-        const joined=(prev+(prev?' ':'')+best.transcript.trim());
-        box.value=joined;
-        box.setAttribute('data-saved',joined);
-        setConfidence(best.confidence||0.8);
-        document.getElementById('saveMainBtn').classList.add('show');
-        document.getElementById('discardBtn').classList.add('show');
-        if(selectedLang==='ja-JP') updateJpPreview(joined);
-      } else { interim+=res[0].transcript; }
+        for(let j=1;j<res.length;j++)if(res[j].confidence>best.confidence)best=res[j];
+        finalPart+=best.transcript;
+        setConf(best.confidence||0.7);
+      } else interim+=res[0].transcript;
     }
-    if(interim){
-      const saved=document.getElementById('editBox').getAttribute('data-saved')||'';
-      document.getElementById('editBox').value=saved+(saved?' ':'')+interim;
+
+    const box=document.getElementById('editBox');
+    if(finalPart){
+      const cleaned=finalPart.trim();
+      // Only append if NOT too similar to what we already have
+      if(cleaned&&!isTooSimilar(cleaned,lastFinalText)){
+        lastFinalText=(lastFinalText+(lastFinalText?' ':'')+cleaned);
+        box.value=lastFinalText;
+        box.setAttribute('data-saved',lastFinalText);
+        const isJp=selectedLang==='ja-JP';
+        if(isJp)updateJpPreview(lastFinalText);
+        else{detectedItems=smartDetect(lastFinalText);renderDetItems();}
+        showSaveBtns(true);
+      }
+    } else if(interim){
+      const saved=box.getAttribute('data-saved')||'';
+      box.value=saved+(saved?' ':'')+interim;
     }
   };
   r.onerror=e=>{
-    if(e.error==='no-speech'){showToast('Tidak terdengar suara, coba lagi');return;}
+    if(e.error==='no-speech')return;
     if(e.error==='audio-capture'){showToast('Mikrofon tidak bisa diakses');stopRecording();return;}
-    if(e.error==='not-allowed'){showToast('Izin mikrofon ditolak');stopRecording();return;}
+    if(e.error==='not-allowed'){showToast('Izin mikrofon ditolak — cek pengaturan Chrome');stopRecording();return;}
     stopRecording();
   };
-  r.onend=()=>{ if(isListening){try{r.start();}catch(e){}} };
+  // Restart after each utterance with delay to prevent double-capture
+  r.onend=()=>{if(isListening)setTimeout(()=>{if(isListening)try{r.start();}catch(e){}},250);};
   return r;
 }
 
 function startRecording(){
-  recognition=initRecognition(); if(!recognition)return;
-  document.getElementById('editBox').setAttribute('data-saved',document.getElementById('editBox').value);
+  recognition=initRec();if(!recognition)return;
+  lastFinalText=document.getElementById('editBox').value||'';
+  document.getElementById('editBox').setAttribute('data-saved',lastFinalText);
   try{recognition.start();}catch(e){showToast('Gagal memulai mikrofon');return;}
   isListening=true;
   const isJp=selectedLang==='ja-JP';
@@ -708,13 +886,12 @@ function startRecording(){
   document.getElementById('micBigBtn').textContent='⏹️';
   document.getElementById('micArea').classList.add('recording');
   document.getElementById('visualizer').classList.add('active');
-  document.getElementById('recStatus').textContent=isJp?'録音中... 話してください':'Sedang merekam...';
+  document.getElementById('recStatus').textContent=isJp?'録音中… 話してください':'Sedang merekam…';
   document.getElementById('recStatus').classList.add('live');
 }
-
 function stopRecording(){
   isListening=false;
-  if(recognition){try{recognition.stop();}catch(e){} recognition=null;}
+  if(recognition){try{recognition.stop();}catch(e){}recognition=null;}
   document.getElementById('micBigBtn').classList.remove('recording');
   document.getElementById('micBigBtn').textContent='🎙️';
   document.getElementById('micArea').classList.remove('recording');
@@ -723,59 +900,69 @@ function stopRecording(){
   document.getElementById('recStatus').textContent=hasText?'Selesai — koreksi jika perlu':'Pilih bahasa lalu tekan mic';
   document.getElementById('recStatus').classList.remove('live');
 }
+document.getElementById('micBigBtn').addEventListener('click',()=>{if(isListening)stopRecording();else startRecording();});
 
-function resetRecordScreen(){
-  stopRecording();
-  document.getElementById('editBox').value='';
-  document.getElementById('editBox').removeAttribute('data-saved');
-  document.getElementById('saveMainBtn').classList.remove('show');
-  document.getElementById('discardBtn').classList.remove('show');
-  document.getElementById('confWrap').classList.remove('show');
-  document.getElementById('jpPreview').classList.remove('show');
-  document.getElementById('recStatus').textContent='Pilih bahasa lalu tekan mic';
-  document.getElementById('recStatus').classList.remove('live');
+// RESET
+function resetAll(){
+  clearAll();
   selectedCat='Umum';
   document.querySelectorAll('.cat-pill').forEach(p=>p.classList.toggle('on',p.dataset.cat==='Umum'));
+  // Reset to voice mode
+  document.getElementById('modeVoice').classList.add('on');
+  document.getElementById('modeType').classList.remove('on');
+  inputMode='voice';
+  document.getElementById('voiceSection').style.display='flex';
+  document.getElementById('typeSection').style.display='none';
+  document.getElementById('editWrap').style.display='block';
+  document.getElementById('recTitleLabel').textContent='Catatan Baru';
 }
 
-document.getElementById('micBigBtn').addEventListener('click',()=>{
-  if(isListening) stopRecording(); else startRecording();
-});
-document.getElementById('discardBtn').addEventListener('click',()=>{
-  stopRecording();
-  document.getElementById('editBox').value='';
-  document.getElementById('editBox').removeAttribute('data-saved');
-  document.getElementById('saveMainBtn').classList.remove('show');
-  document.getElementById('discardBtn').classList.remove('show');
-  document.getElementById('confWrap').classList.remove('show');
-  document.getElementById('jpPreview').classList.remove('show');
-  document.getElementById('recStatus').textContent='Pilih bahasa lalu tekan mic';
-  document.getElementById('recStatus').classList.remove('live');
-});
+document.getElementById('discardBtn').addEventListener('click',clearAll);
 
+// ── SAVE ──
 document.getElementById('saveMainBtn').addEventListener('click',()=>{
-  const text=document.getElementById('editBox').value.trim();
-  if(!text){showToast('Teks masih kosong');return;}
-  const isJp=selectedLang==='ja-JP';
+  const isJp=(inputMode==='voice'&&selectedLang==='ja-JP')||(inputMode==='type'&&typeIsJp);
+  const rawText=inputMode==='voice'
+    ?document.getElementById('editBox').value.trim()
+    :document.getElementById('typeBox').value.trim();
+
+  const activeItems=detectedItems.filter(i=>i.active);
+
+  if(!rawText&&activeItems.length===0){showToast('Teks masih kosong');return;}
+
   const memo={
-    id:Date.now(), text, cat:selectedCat, done:false,
-    ts:new Date().toISOString(), lang:selectedLang
+    id:uid(),
+    title:rawText.slice(0,50)+(rawText.length>50?'…':''),
+    text:rawText,
+    cat:selectedCat,done:false,
+    ts:new Date().toISOString(),
+    lang:isJp?'ja-JP':selectedLang
   };
-  if(isJp){
-    memo.scripts=generateJpScripts(text);
-    memo.activeScripts=Array.from(activeScripts);
+
+  // Multiple items → checklist
+  if(activeItems.length>1){
+    memo.items=activeItems.map(i=>({id:uid(),text:i.text,checked:false}));
   }
-  memos.unshift(memo);
-  save(); renderMemos();
-  showToast(isJp?'✔ メモを保存しました！':'✔ Catatan tersimpan!');
+
+  if(isJp){
+    memo.scripts=genJpScripts(rawText);
+    memo.activeScripts=Array.from(activeScripts);
+    memo.title=rawText;
+  }
+
+  memos.unshift(memo);save();renderMemos();
+
+  const msg=isJp?'✔ メモを保存しました！'
+    :activeItems.length>1?`✔ ${activeItems.length} item checklist disimpan!`:'✔ Catatan tersimpan!';
+  showToast(msg);
   goTo('homeScreen');
-  setTimeout(resetRecordScreen,400);
+  setTimeout(resetAll,400);
 });
 
-// ── PWA INSTALL ──
+// ── PWA ──
 window.addEventListener('beforeinstallprompt',e=>{
-  e.preventDefault(); deferredInstall=e;
-  if(!localStorage.getItem('vm_banner_closed')) document.getElementById('installBanner').classList.add('show');
+  e.preventDefault();deferredInstall=e;
+  if(!localStorage.getItem('vm_banner_closed'))document.getElementById('installBanner').classList.add('show');
 });
 document.getElementById('installBtn').addEventListener('click',async()=>{
   if(!deferredInstall)return;
@@ -789,7 +976,7 @@ document.getElementById('closeBannerBtn').addEventListener('click',()=>{
   localStorage.setItem('vm_banner_closed','1');
 });
 
-if('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(()=>{});
+if('serviceWorker' in navigator)navigator.serviceWorker.register('./sw.js').catch(()=>{});
 renderMemos();
 </script>
 </body>
